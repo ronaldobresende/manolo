@@ -16,7 +16,7 @@ Agente usado: Gemini
 ## Fase atual
 
 ☑ Fase 1 — Local, terminal (Concluída)
-☐ Fase 2 — Nuvem
+☑ Fase 2 — Nuvem (Em andamento)
 ☑ Fase 3 — WhatsApp (Em andamento)
 ☐ Fase 4 — Web App
 
@@ -86,3 +86,4 @@ Agente usado: Gemini
 | Jun 2026 | Gemini | Adicionado suporte à ingestão de PDFs no bot do Telegram, incluindo refatoração do `ingestion_pdf.py` e criação de um `ConversationHandler` para coletar metadados. |
 | Jun 2026 | Gemini | Depuração completa do ambiente Docker e dos `imports` do Python. Configuração e validação do webhook do WhatsApp para o fluxo de chat de ponta a ponta. |
 | Jun 2026 | Gemini | Implementação do fluxo de áudio no WhatsApp, com download, transcrição, roteamento de intenção (pergunta/checklist) e notificações de sucesso/erro. |
+| Jun 2026 | Gemini | Realizado o deploy da aplicação no Render com banco de dados no Neon.tech. Validação bem-sucedida do fluxo de chat via WhatsApp em ambiente de produção. |

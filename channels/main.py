@@ -39,9 +39,9 @@ async def root():
     """Rota raiz para verificar se a API está no ar."""
     return {"message": "Manolo API está no ar! 🤖"}
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
-    """Rota de health check para o Render."""
+    """Rota de health check para o Render e UptimeRobot."""
     return {"status": "ok"}
 
 @app.get("/webhook")
