@@ -201,6 +201,4 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Erro ao processar webhook: {e}")
         
-    return {"status": "ok"}   logger.error(f"Erro ao processar webhook: {e}")
-        
     return {"status": "ok"}
