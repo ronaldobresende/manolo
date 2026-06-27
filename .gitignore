@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+myenv/
+venv/
+env/
+
+# Ambiente e Infra
+.env
+pgdata/
+*.log
+seed.sql
+
+# Testes e arquivos manuais
+tests/testes_manuais/

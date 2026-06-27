@@ -1,0 +1,1 @@
+"""Pipeline de ingestão (PDF, áudio, vídeo)."""
