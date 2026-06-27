@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime
 import pytz
+from langsmith import traceable
 from core.memory import buscar_contexto_documentos, obter_perfil_vivo, buscar_contexto_checklists
 from agent.profile import atualizar_perfil
 from core.clients import get_openai_client
@@ -49,6 +50,7 @@ Especialidade (se terapeuta): {especialidade}
 
     return prompt
 
+@traceable
 def perguntar_ao_manolo(pergunta: str, crianca_id: str, telefone_whatsapp: str, nome_usuario: str, perfil_usuario: str = "pai/mãe") -> str:
     """Fluxo principal de perguntas: RAG + Chamada do LLM com histórico de conversa."""
     try:

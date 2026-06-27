@@ -3,6 +3,7 @@
 import os
 import argparse
 import logging
+from langsmith import traceable
 import tempfile
 from typing import Callable, Awaitable, Any
 import json
@@ -49,6 +50,7 @@ async def processar_midia_checklist(
             os.remove(audio_path)
             logger.info(f"Arquivo de mídia temporário removido: {audio_path}")
 
+@traceable
 def _determinar_intencao_audio(transcricao: str) -> str:
     """Usa o LLM para classificar a intenção do usuário (pergunta ou checklist)."""
     if not transcricao:
@@ -74,6 +76,7 @@ def _determinar_intencao_audio(transcricao: str) -> str:
         logger.error(f"Erro ao determinar intenção do áudio: {e}")
         return "invalido"
 
+@traceable
 def _estruturar_e_salvar_checklist(transcricao: str, file_path: str, data_checklist: str, crianca_id: str, usuario_id: str, origem: str) -> str | None:
     """Recebe uma transcrição, estrutura com LLM e salva no banco."""
     if not transcricao.strip():

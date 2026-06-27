@@ -2,6 +2,7 @@
 
 import json
 import logging
+from langsmith import traceable
 from core.database import get_connection
 from core.memory import obter_perfil_vivo, buscar_contexto_checklists # Assuming memory.py is in the root
 from core.clients import get_openai_client # Assuming clients.py is in the root
@@ -42,6 +43,7 @@ def buscar_documentos_recentes(crianca_id: str, limite_dias: int = 90) -> str:
         logger.error(f"Erro ao buscar documentos recentes: {e}")
         return ""
 
+@traceable
 def atualizar_perfil(crianca_id: str):
     """Lê os últimos dados da criança, pede para o LLM reescrever o perfil e salva no banco."""
     client = get_openai_client()

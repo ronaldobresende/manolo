@@ -3,6 +3,7 @@
 import os
 import argparse
 import logging
+from langsmith import traceable
 import tempfile
 from typing import Callable, Awaitable, Any
 import json
@@ -45,6 +46,7 @@ async def processar_midia_checklist(
             os.remove(audio_path)
             logger.info(f"Arquivo de mídia temporário removido: {audio_path}")
 
+@traceable
 def _processar_arquivo_audio(file_path: str, data_checklist: str, crianca_id: str, usuario_id: str, origem: str) -> str | None:
     """
     Processa um arquivo de áudio para transcrever e estruturar como checklist.

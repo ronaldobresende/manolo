@@ -3,6 +3,7 @@
 import os
 import argparse
 import logging
+from langsmith import traceable
 from dotenv import load_dotenv
 import pypdf
 from PIL import Image
@@ -26,6 +27,7 @@ load_dotenv()
 CRIANCA_ID = 'c0000000-0000-0000-0000-000000000001'
 USUARIO_ID = 'b0000000-0000-0000-0000-000000000001'
 
+@traceable
 def is_document_relevant(text: str, client: OpenAI) -> bool:
     """Usa um LLM para verificar se o conteúdo do documento é relevante para o contexto do projeto."""
     if not text or len(text.strip()) < 50:
@@ -56,6 +58,7 @@ def is_document_relevant(text: str, client: OpenAI) -> bool:
         logger.error(f"Erro na verificação de relevância do documento: {e}")
         return False # Em caso de erro, assume que não é relevante para segurança.
 
+@traceable
 def processar_pdf(file_path: str, tipo: str, especialidade: str, titulo: str, data: str, crianca_id: str, usuario_id: str):
     """Lógica principal de ingestão, extração, embedding e salvamento de um PDF."""
     

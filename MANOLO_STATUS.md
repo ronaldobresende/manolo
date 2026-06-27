@@ -49,6 +49,7 @@ Agente usado: Gemini
 - [x] Realizar consultas aos checklists via `chat.py` para validar recuperação
 - [x] Refatorar a ingestão de mídia para um fluxo agnóstico de canal, centralizando a lógica em `ingestion_audio.py`.
 - [x] Adicionar suporte à ingestão de PDFs no bot do Telegram com fluxo de conversa.
+- [x] Integrar LangSmith para observabilidade e rastreamento das chamadas da OpenAI usando o decorador @traceable.
 
 ---
 
@@ -66,8 +67,10 @@ Agente usado: Gemini
 
 ## Problemas conhecidos / débitos técnicos
 
-> Algo que funciona mas não está certo, ou que foi deixado para depois. - **Configuração WhatsApp:** A integração está bloqueada aguardando suporte da operadora de telefonia para resolver um problema com o número fixo que será usado na API do WhatsApp Business.
+> Algo que funciona mas não está certo, ou que foi deixado para depois.
+- **Configuração WhatsApp:** A integração está bloqueada aguardando suporte da operadora de telefonia para resolver um problema com o número fixo que será usado na API do WhatsApp Business.
 - **Configuração WhatsApp (Produção):** A implantação final com um número de telefone permanente ainda depende da resolução de um problema com a operadora. No entanto, o desenvolvimento e os testes estão totalmente funcionais com o token de acesso temporário da Meta.
+- **Inconsistências de Fluxo no Webhook:** Identificados problemas de roteamento de checklists em texto, volatilidade do histórico em memória e desalinhamento temporal de datas. Documentados detalhadamente em [DEBITOS_TECNICOS.md](file:///c:/projects/python/manolo/DEBITOS_TECNICOS.md).
 
 ---
 
@@ -93,3 +96,5 @@ Agente usado: Gemini
 | Jun 2026 | Gemini | Implementação do fluxo de áudio no WhatsApp, com download, transcrição, roteamento de intenção (pergunta/checklist) e notificações de sucesso/erro. |
 | Jun 2026 | Gemini | Implementação de histórico de conversa no agente e ajuste da temperatura do LLM para 0.2. Atualização das chamadas do agente nos canais (CLI, WhatsApp, Telegram) para incluir o identificador do usuário. |
 | Jun 2026 | Gemini | Reversão da funcionalidade de indicador "digitando" no WhatsApp. A API da Meta não suporta esta ação, causando erros. O código foi limpo para remover a complexidade desnecessária. |
+| Jun 2026 | Gemini | Correção de bug no webhook do WhatsApp (KeyError por conta do RealDictCursor). Mapeamento das inconsistências de roteamento, datas e volatilidade do histórico no arquivo DEBITOS_TECNICOS.md. |
+| Jun 2026 | Gemini | Integração do LangSmith para observabilidade de chamadas da OpenAI utilizando o decorador @traceable nos módulos de agente e pipelines de ingestão. |
