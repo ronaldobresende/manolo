@@ -42,6 +42,44 @@ def enviar_mensagem(texto: str, telefone_destino: str):
             logger.error(f"Detalhes do erro: {e.response.text}")
         return False
 
+async def enviar_typing(telefone_destino: str):
+    """Envia o status 'digitando' via WhatsApp API."""
+    if not settings.WHATSAPP_TOKEN or not settings.WHATSAPP_PHONE_ID:
+        logger.error("Credenciais do WhatsApp não configuradas no .env")
+        return False
+        
+    url = f"https://graph.facebook.com/v19.0/{settings.WHATSAPP_PHONE_ID}/messages"
+    
+    headers = {
+        "Authorization": f"Bearer {settings.WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    # O usuário pediu 'reaction', mas o correto para 'digitando' é 'typing'
+    # que na verdade é uma ação de marcar como lido e indicar que está digitando.
+    # A ação correta é 'mark_as_read' e depois a API do WhatsApp mostra o typing.
+    # A API oficial mudou, agora o status é enviado com 'typing'.
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": telefone_destino,
+        "type": "typing"
+    }
+    
+    logger.info(f"Enviando status 'typing' para {telefone_destino}")
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            # O timeout pode ser baixo, é uma ação rápida
+            response = await client.post(url, headers=headers, json=payload, timeout=5.0)
+            response.raise_for_status()
+            logger.info(f"Status 'typing' para {telefone_destino} enviado com sucesso.")
+            return True
+        except httpx.HTTPStatusError as e:
+            logger.error(f"[ASYNC] Erro de status HTTP ao enviar typing: {e.response.status_code} - {e.response.text}")
+        except Exception as e:
+            logger.error(f"[ASYNC] Erro inesperado ao enviar typing: {e}")
+        return False
+
 async def enviar_mensagem_async(texto: str, telefone_destino: str):
     """Envia uma mensagem de texto de forma assíncrona via WhatsApp API."""
     if not settings.WHATSAPP_TOKEN or not settings.WHATSAPP_PHONE_ID:

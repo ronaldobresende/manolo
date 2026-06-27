@@ -40,6 +40,11 @@ Agente usado: Gemini
 - [x] Implementar recebimento e processamento de áudio via WhatsApp (Fase 3), incluindo roteamento de intenção (pergunta vs. checklist).
 - [x] Migrar a transcrição de áudio de Whisper local para a API da OpenAI para melhorar performance e simplificar o ambiente.
 - [x] Implementar histórico de conversa por usuário e ajustar temperature do LLM para maior precisão.
+- [x] Implementar indicador de "digitando" via WhatsApp API.
+- [x] Adicionar nome do usuário ao prompt do sistema e usá-lo na saudação inicial do agente.
+- [x] Implementar tom de voz contextualizado por perfil de usuário (família, admin, terapeuta) no prompt do sistema.
+- [x] Injetar data e fuso horário atual no prompt do sistema para resolver referências temporais.
+- [x] Substituir mensagens de erro genéricas por mensagens amigáveis e assinadas pelo agente Manolo.
 
 - [x] Realizar consultas aos checklists via `chat.py` para validar recuperação
 - [x] Refatorar a ingestão de mídia para um fluxo agnóstico de canal, centralizando a lógica em `ingestion_audio.py`.
@@ -87,3 +92,4 @@ Agente usado: Gemini
 | Jun 2026 | Gemini | Depuração completa do ambiente Docker e dos `imports` do Python. Configuração e validação do webhook do WhatsApp para o fluxo de chat de ponta a ponta. |
 | Jun 2026 | Gemini | Implementação do fluxo de áudio no WhatsApp, com download, transcrição, roteamento de intenção (pergunta/checklist) e notificações de sucesso/erro. |
 | Jun 2026 | Gemini | Implementação de histórico de conversa no agente e ajuste da temperatura do LLM para 0.2. Atualização das chamadas do agente nos canais (CLI, WhatsApp, Telegram) para incluir o identificador do usuário. |
+| Jun 2026 | Gemini | Implementação de melhorias de usabilidade: indicador de "digitando" no WhatsApp, saudação com nome do usuário, tom por perfil, data/hora no prompt e mensagens de erro amigáveis. |

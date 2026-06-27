@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import FastAPI, Request, Response, HTTPException, BackgroundTasks
 
 from core.database import get_connection
-from channels.whatsapp import enviar_mensagem, baixar_e_salvar_midia, enviar_mensagem_async
+from channels.whatsapp import enviar_mensagem, baixar_e_salvar_midia, enviar_mensagem_async, enviar_typing
 from agent.agent import perguntar_ao_manolo
 from core.config import settings # Importa a instância de configurações
 # Importações atualizadas para o novo fluxo de áudio
@@ -97,8 +97,16 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
             texto = mensagem.get("text", {}).get("body", "")
             logger.info(f"Mensagem de texto recebida de {nome_usuario}: {texto}")
             
-            perfil_contexto = f"{perfil_usuario} ({nome_usuario})"
-            resposta = perguntar_ao_manolo(texto, settings.CRIANCA_ID_PILOTO, telefone_remetente, perfil_usuario=perfil_contexto)
+            # Envia o status "digitando"
+            await enviar_typing(telefone_remetente)
+            
+            resposta = perguntar_ao_manolo(
+                pergunta=texto, 
+                crianca_id=settings.CRIANCA_ID_PILOTO, 
+                telefone_whatsapp=telefone_remetente, 
+                nome_usuario=nome_usuario,
+                perfil_usuario=perfil_usuario
+            )
             enviar_mensagem(resposta, telefone_remetente)
         
         elif tipo == "audio":
@@ -142,8 +150,14 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
                     
                     # 4. Roteamento
                     if intencao == 'pergunta':
-                        perfil_contexto = f"{perfil_usuario} ({nome_usuario})"
-                        resposta = perguntar_ao_manolo(transcricao, settings.CRIANCA_ID_PILOTO, telefone, perfil_usuario=perfil_contexto)
+                        await enviar_typing(telefone)
+                        resposta = perguntar_ao_manolo(
+                            pergunta=transcricao, 
+                            crianca_id=settings.CRIANCA_ID_PILOTO, 
+                            telefone_whatsapp=telefone, 
+                            nome_usuario=nome_usuario,
+                            perfil_usuario=perfil_usuario
+                        )
                         await enviar_mensagem_async(resposta, telefone)
                     
                     elif intencao == 'checklist':
