@@ -10,7 +10,7 @@ env/
 .env
 pgdata/
 *.log
-seed.sql
+scripts/seed.sql
 
 # Testes e arquivos manuais
 tests/testes_manuais/
