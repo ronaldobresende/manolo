@@ -27,8 +27,8 @@ def verificar_acesso(telefone: str):
                 cur.execute("SELECT id, nome, perfil FROM usuarios WHERE telefone_whatsapp = %s AND ativo = TRUE", (telefone,))
                 usuario_data = cur.fetchone()
                 if usuario_data:
-                    # Retorna um dicionário para facilitar o acesso
-                    return {"id": usuario_data[0], "nome": usuario_data[1], "perfil": usuario_data[2]}
+                    # Retorna um dicionário para facilitar o acesso (chaves de string devido ao RealDictCursor)
+                    return {"id": usuario_data['id'], "nome": usuario_data['nome'], "perfil": usuario_data['perfil']}
     except Exception as e:
         logger.error(f"Erro ao verificar usuário: {e}")
     return None
