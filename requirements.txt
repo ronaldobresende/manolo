@@ -16,6 +16,7 @@ httpx
 python-telegram-bot
 python-dotenv
 pytz
+boto3
 
 # Dependências para OCR
 pytesseract

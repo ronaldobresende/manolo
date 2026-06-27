@@ -111,6 +111,7 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
             if not texto: return Response(status_code=200)
             
             logger.info(f"Mensagem de texto recebida de {nome_usuario}: {texto}")
+            background_tasks.add_task(enviar_mensagem_async, "Consultando...", telefone_remetente)
             background_tasks.add_task(processar_e_enviar_resposta, texto, telefone_remetente, nome_usuario, perfil_usuario)
         
         elif tipo == "audio":

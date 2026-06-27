@@ -12,6 +12,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from database import get_connection
 from profile import atualizar_perfil
 from clients import get_openai_client, OpenAI
+from core.storage import upload_file_to_r2
+import uuid
 
 # Configuração básica de log
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -114,6 +116,14 @@ def processar_pdf(file_path: str, tipo: str, especialidade: str, titulo: str, da
     chunks = splitter.split_text(text)
     logger.info(f"{len(chunks)} chunks gerados.")
 
+    logger.info("Fazendo upload do arquivo PDF para o R2...")
+    object_name = f"documentos/{crianca_id}/{uuid.uuid4()}.pdf"
+    storage_url = upload_file_to_r2(file_path, object_name)
+
+    if not storage_url:
+        logger.error("Falha no upload para o R2. Abortando salvamento do documento.")
+        return
+
     logger.info("Gerando embeddings via OpenAI...")
     try:
         response = client.embeddings.create(
@@ -135,7 +145,7 @@ def processar_pdf(file_path: str, tipo: str, especialidade: str, titulo: str, da
                     (crianca_id, usuario_id, tipo, especialidade, titulo, data_documento, storage_path, processado)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                """, (crianca_id, usuario_id, tipo, especialidade, titulo, data, file_path, True))
+                """, (crianca_id, usuario_id, tipo, especialidade, titulo, data, storage_url, True))
                 documento_id = cur.fetchone()['id']
                 
                 # 2. Inserir chunks na tabela documento_chunks

@@ -11,6 +11,8 @@ from core.database import get_connection
 from agent.checklist import salvar_checklist
 from agent.profile import atualizar_perfil
 from core.clients import get_openai_client
+from core.storage import upload_file_to_r2
+import uuid
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -104,6 +106,14 @@ O JSON deve ter duas chaves principais:
         logger.error(f"Erro ao chamar LLM para estruturar checklist: {e}")
         return
 
+    logger.info("Fazendo upload do arquivo de áudio para o R2...")
+    object_name = f"audio/{crianca_id}/{uuid.uuid4()}.oga"
+    storage_url = upload_file_to_r2(file_path, object_name)
+
+    if not storage_url:
+        logger.error("Falha no upload para o R2. Abortando salvamento do checklist.")
+        return None
+
     logger.info("Salvando registro de mídia no banco...")
     try:
         with get_connection() as conn:
@@ -112,7 +122,7 @@ O JSON deve ter duas chaves principais:
                     INSERT INTO midias 
                     (crianca_id, usuario_id, tipo, contexto, storage_path, transcricao, analise_agente, processado)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (crianca_id, usuario_id, 'audio', 'checklist', file_path, transcricao, analise_json, True))
+                """, (crianca_id, usuario_id, 'audio', 'checklist', storage_url, transcricao, analise_json, True))
             conn.commit()
         
         logger.info("Estruturando informações nas tabelas de checklist...")

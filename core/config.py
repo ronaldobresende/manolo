@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     WHATSAPP_VERIFY_TOKEN: str = "manolo_default_secret"
     WHATSAPP_PHONE_ID: str | None = None
 
+    # Cloudflare R2
+    R2_ENDPOINT_URL: str | None = None
+    R2_ACCESS_KEY_ID: str | None = None
+    R2_SECRET_ACCESS_KEY: str | None = None
+    R2_BUCKET_NAME: str | None = None
+    R2_PUBLIC_URL: str | None = None
+
     # Constantes da aplicação (o único lugar com hardcoding)
     CRIANCA_ID_PILOTO: str = "c0000000-0000-0000-0000-000000000001"
     USUARIO_ID_PILOTO: str = "b0000000-0000-0000-0000-000000000001"
