@@ -17,7 +17,7 @@ def main():
             if not pergunta.strip():
                 continue
 
-            resposta = perguntar_ao_manolo(pergunta, settings.CRIANCA_ID_PILOTO, perfil_usuario="admin (Pai)")
+            resposta = perguntar_ao_manolo(pergunta, settings.CRIANCA_ID_PILOTO, "cli_chat_user", perfil_usuario="admin (Pai)")
             print(f"\nManolo: {resposta}")
             
         except KeyboardInterrupt:

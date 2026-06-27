@@ -52,7 +52,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Deixa eu pensar... 🤔")
     try:
         perfil_contexto = f"{usuario_db['perfil']} ({usuario_db['nome']})"
-        resposta = perguntar_ao_manolo(pergunta, settings.CRIANCA_ID_PILOTO, perfil_usuario=perfil_contexto)
+        resposta = perguntar_ao_manolo(pergunta, settings.CRIANCA_ID_PILOTO, str(usuario_id_telegram), perfil_usuario=perfil_contexto)
         await update.message.reply_text(resposta)
     except Exception as e:
         logger.error(f"Erro ao consultar o agente: {e}")

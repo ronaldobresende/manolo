@@ -98,7 +98,7 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
             logger.info(f"Mensagem de texto recebida de {nome_usuario}: {texto}")
             
             perfil_contexto = f"{perfil_usuario} ({nome_usuario})"
-            resposta = perguntar_ao_manolo(texto, settings.CRIANCA_ID_PILOTO, perfil_usuario=perfil_contexto)
+            resposta = perguntar_ao_manolo(texto, settings.CRIANCA_ID_PILOTO, telefone_remetente, perfil_usuario=perfil_contexto)
             enviar_mensagem(resposta, telefone_remetente)
         
         elif tipo == "audio":
@@ -143,7 +143,7 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
                     # 4. Roteamento
                     if intencao == 'pergunta':
                         perfil_contexto = f"{perfil_usuario} ({nome_usuario})"
-                        resposta = perguntar_ao_manolo(transcricao, settings.CRIANCA_ID_PILOTO, perfil_usuario=perfil_contexto)
+                        resposta = perguntar_ao_manolo(transcricao, settings.CRIANCA_ID_PILOTO, telefone, perfil_usuario=perfil_contexto)
                         await enviar_mensagem_async(resposta, telefone)
                     
                     elif intencao == 'checklist':

@@ -39,7 +39,7 @@ Agente usado: Gemini
 - [x] Configurar e validar o webhook do WhatsApp (Fase 3) para mensagens de texto.
 - [x] Implementar recebimento e processamento de áudio via WhatsApp (Fase 3), incluindo roteamento de intenção (pergunta vs. checklist).
 - [x] Migrar a transcrição de áudio de Whisper local para a API da OpenAI para melhorar performance e simplificar o ambiente.
-- [x] Integrar o fluxo de chat do WhatsApp com o agente Manolo, incluindo busca no banco de dados.
+- [x] Implementar histórico de conversa por usuário e ajustar temperature do LLM para maior precisão.
 
 - [x] Realizar consultas aos checklists via `chat.py` para validar recuperação
 - [x] Refatorar a ingestão de mídia para um fluxo agnóstico de canal, centralizando a lógica em `ingestion_audio.py`.
@@ -86,4 +86,4 @@ Agente usado: Gemini
 | Jun 2026 | Gemini | Adicionado suporte à ingestão de PDFs no bot do Telegram, incluindo refatoração do `ingestion_pdf.py` e criação de um `ConversationHandler` para coletar metadados. |
 | Jun 2026 | Gemini | Depuração completa do ambiente Docker e dos `imports` do Python. Configuração e validação do webhook do WhatsApp para o fluxo de chat de ponta a ponta. |
 | Jun 2026 | Gemini | Implementação do fluxo de áudio no WhatsApp, com download, transcrição, roteamento de intenção (pergunta/checklist) e notificações de sucesso/erro. |
-| Jun 2026 | Gemini | Realizado o deploy da aplicação no Render com banco de dados no Neon.tech. Validação bem-sucedida do fluxo de chat via WhatsApp em ambiente de produção. |
+| Jun 2026 | Gemini | Implementação de histórico de conversa no agente e ajuste da temperatura do LLM para 0.2. Atualização das chamadas do agente nos canais (CLI, WhatsApp, Telegram) para incluir o identificador do usuário. |
