@@ -100,14 +100,15 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
             # Envia o status "digitando"
             await enviar_typing(telefone_remetente)
             
-            resposta = perguntar_ao_manolo(
+            resposta = await asyncio.to_thread(
+                perguntar_ao_manolo,
                 pergunta=texto, 
                 crianca_id=settings.CRIANCA_ID_PILOTO, 
                 telefone_whatsapp=telefone_remetente, 
                 nome_usuario=nome_usuario,
                 perfil_usuario=perfil_usuario
             )
-            enviar_mensagem(resposta, telefone_remetente)
+            await enviar_mensagem_async(resposta, telefone_remetente)
         
         elif tipo == "audio":
             media_id = mensagem.get("audio", {}).get("id")
