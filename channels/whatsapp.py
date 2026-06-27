@@ -42,8 +42,10 @@ def enviar_mensagem(texto: str, telefone_destino: str):
             logger.error(f"Detalhes do erro: {e.response.text}")
         return False
 
-async def enviar_typing(telefone_destino: str):
-    """Envia o status 'digitando' via WhatsApp API."""
+async def enviar_typing(telefone_destino: str, typing_on: bool = True):
+    """
+    Envia o status 'digitando' (typing_on=True) ou para de enviar (typing_on=False).
+    """
     if not settings.WHATSAPP_TOKEN or not settings.WHATSAPP_PHONE_ID:
         logger.error("Credenciais do WhatsApp não configuradas no .env")
         return False
@@ -55,29 +57,30 @@ async def enviar_typing(telefone_destino: str):
         "Content-Type": "application/json"
     }
     
-    # O usuário pediu 'reaction', mas o correto para 'digitando' é 'typing'
-    # que na verdade é uma ação de marcar como lido e indicar que está digitando.
-    # A ação correta é 'mark_as_read' e depois a API do WhatsApp mostra o typing.
-    # A API oficial mudou, agora o status é enviado com 'typing'.
+    # O payload foi corrigido para usar o formato de 'action' que a API do WhatsApp espera.
     payload = {
         "messaging_product": "whatsapp",
         "to": telefone_destino,
-        "type": "typing"
+        "type": "action",
+        "action": {
+            "typing": typing_on
+        }
     }
     
-    logger.info(f"Enviando status 'typing' para {telefone_destino}")
+    action_log = "'digitando'" if typing_on else "'parando de digitar'"
+    logger.info(f"Enviando status {action_log} para {telefone_destino}")
     
     async with httpx.AsyncClient() as client:
         try:
             # O timeout pode ser baixo, é uma ação rápida
             response = await client.post(url, headers=headers, json=payload, timeout=5.0)
             response.raise_for_status()
-            logger.info(f"Status 'typing' para {telefone_destino} enviado com sucesso.")
+            logger.info(f"Status {action_log} para {telefone_destino} enviado com sucesso.")
             return True
         except httpx.HTTPStatusError as e:
-            logger.error(f"[ASYNC] Erro de status HTTP ao enviar typing: {e.response.status_code} - {e.response.text}")
+            logger.error(f"[ASYNC] Erro de status HTTP ao enviar ação de typing: {e.response.status_code} - {e.response.text}")
         except Exception as e:
-            logger.error(f"[ASYNC] Erro inesperado ao enviar typing: {e}")
+            logger.error(f"[ASYNC] Erro inesperado ao enviar ação de typing: {e}")
         return False
 
 async def enviar_mensagem_async(texto: str, telefone_destino: str):

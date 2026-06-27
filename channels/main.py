@@ -98,7 +98,7 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
             logger.info(f"Mensagem de texto recebida de {nome_usuario}: {texto}")
             
             # Envia o status "digitando"
-            await enviar_typing(telefone_remetente)
+            await enviar_typing(telefone_remetente, typing_on=True)
             
             resposta = await asyncio.to_thread(
                 perguntar_ao_manolo,
@@ -108,6 +108,8 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
                 nome_usuario=nome_usuario,
                 perfil_usuario=perfil_usuario
             )
+            # Para o "digitando" antes de enviar a resposta
+            await enviar_typing(telefone_remetente, typing_on=False)
             await enviar_mensagem_async(resposta, telefone_remetente)
         
         elif tipo == "audio":
@@ -151,14 +153,17 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
                     
                     # 4. Roteamento
                     if intencao == 'pergunta':
-                        await enviar_typing(telefone)
-                        resposta = perguntar_ao_manolo(
+                        await enviar_typing(telefone, typing_on=True)
+                        # A função síncrona é executada em um thread para não bloquear.
+                        resposta = await asyncio.to_thread(
+                            perguntar_ao_manolo,
                             pergunta=transcricao, 
                             crianca_id=settings.CRIANCA_ID_PILOTO, 
                             telefone_whatsapp=telefone, 
                             nome_usuario=nome_usuario,
                             perfil_usuario=perfil_usuario
                         )
+                        await enviar_typing(telefone, typing_on=False)
                         await enviar_mensagem_async(resposta, telefone)
                     
                     elif intencao == 'checklist':
@@ -195,5 +200,7 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
             background_tasks.add_task(processar_e_notificar, usuario_id, telefone_remetente)
     except Exception as e:
         logger.error(f"Erro ao processar webhook: {e}")
+        
+    return {"status": "ok"}   logger.error(f"Erro ao processar webhook: {e}")
         
     return {"status": "ok"}
