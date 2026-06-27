@@ -3,7 +3,7 @@
 import logging
 from core.memory import buscar_contexto_documentos, obter_perfil_vivo, buscar_contexto_checklists
 # A importação de 'atualizar_perfil' estava sendo sobrescrita por uma variável.
-from profile import atualizar_perfil
+from agent.profile import atualizar_perfil
 from core.clients import get_openai_client
 
 logger = logging.getLogger(__name__)
