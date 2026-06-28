@@ -394,9 +394,10 @@ def rotear_por_intencao(state: ManoloState) -> str:
     if intencao == "resposta_pendencia":
         return "resposta_pendencia"
     elif intencao == "checklist":
-        return "checklist_completo"
+        return "checklist"
     else:
-        return "rag"
+        return "pergunta"
+
 
 
 # ============================================================
