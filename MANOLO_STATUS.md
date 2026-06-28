@@ -89,8 +89,9 @@ Agente usado: Claude Opus 4.6
 ---
 
 ## Próximo passo
-> Deploy no Render e testes manuais do fluxo completo do LangGraph via WhatsApp. Validar: extração silenciosa, cobrança conversacional de campos ausentes, e compartilhamento de dados entre usuários (cenário Denise→Ronaldo). Após validação, iniciar a integração da KB Denver no `profile.py` para enriquecer o Perfil Vivo com terminologia clínica.
-
+> 1. Testes em produção do novo motor LangGraph (extração Pydantic, empatia e guardrails) no WhatsApp Business.
+> 2. Integração definitiva da KB Denver (`core/kb/`) no `profile.py` para enriquecer a terminologia clínica do Perfil Vivo.
+> 3. **Evolução do Nó 6 (Cobrança):** Implementar RAG na KB Denver para que o LLM substitua as perguntas engessadas do dicionário por perguntas ativas de triagem clínica baseadas nos marcos de desenvolvimento do ESDM.
 ---
 
 ## Histórico de sessões
@@ -113,3 +114,4 @@ Agente usado: Claude Opus 4.6
 | Jun 2026 | Gemini | Correção de bug no webhook do WhatsApp (KeyError por conta do RealDictCursor). Mapeamento das inconsistências de roteamento, datas e volatilidade do histórico no arquivo DEBITOS_TECNICOS.md. |
 | Jun 2026 | Gemini | Integração do LangSmith para observabilidade de chamadas da OpenAI utilizando o decorador @traceable nos módulos de agente e pipelines de ingestão. |
 | Jun 2026 | Claude Opus 4.6 / Gemini | Implementação do LangGraph como motor de orquestração (6 nós, MemorySaver, PROMPT B4, dados parciais, simplificação do webhook, KB Denver). Resolução de KeyError no roteador, reintrodução de feedback "Consultando..." e integração de traces detalhados de LLM via wrap_openai. |
+| Jun 2026 | Gemini 3.1 Pro | Refatoração completa da extração (Structured Outputs via Pydantic), mapeamento direto em colunas SQL no `checklist.py` ao invés de dumps JSON, conversão de datas para o padrão brasileiro nas respostas, adição de **empatia** aos nós de confirmação de checklist com integração orgânica de perguntas, e implementação de **guardrails de escopo e clínico** (prevenção de diagnósticos médicos). |

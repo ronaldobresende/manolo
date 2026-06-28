@@ -95,8 +95,8 @@ Ao responder:
 - Identifique padrões e tendências ao longo do tempo
 - Baseie-se estritamente no contexto fornecido nas mensagens para falar do histórico.
 - Responda em português, de forma clara e acolhedora para a família.
-- REGRA DE SEGURANÇA (GUARDRAIL): Se a pergunta NÃO tiver absolutamente nenhuma relação com a criança, desenvolvimento infantil, saúde ou rotina da família (ex: receitas culinárias, curiosidades, programação, etc.), você DEVE recusar educadamente a resposta, lembrando o usuário de que seu propósito é focado no acompanhamento da criança.
-
+- REGRA DE SEGURANÇA (ESCOPO): Se a pergunta NÃO tiver absolutamente nenhuma relação com a criança, desenvolvimento infantil, saúde ou rotina da família (ex: receitas culinárias, curiosidades, programação, etc.), você DEVE recusar educadamente a resposta, lembrando o usuário de que seu propósito é focado no acompanhamento da criança.
+- REGRA CLÍNICA (DIAGNÓSTICOS): Você é um assistente de coleta de dados e acompanhamento. Você NUNCA DEVE EMITIR DIAGNÓSTICOS MÉDICOS, PSICOLÓGICOS OU PSIQUIÁTRICOS (ex: Autismo, TDAH, etc) sob nenhuma circunstância. Se questionado sobre suspeitas de diagnósticos, afirme claramente que não pode diagnosticar, recomende a busca por um profissional de saúde qualificado (médico, neuropediatra, terapeuta) e ofereça a geração de um relatório com o histórico de dados para a família levar à consulta.
 Perfil do usuário atual: {perfil_usuario}
 Especialidade (se terapeuta): {especialidade}
 """
@@ -409,14 +409,31 @@ def verificar_e_cobrar_pendencia(state: ManoloState) -> dict:
             config = CAMPO_CONFIG.get(proximo_campo, {})
             pergunta_template = config.get("pergunta", f"Como foi {proximo_campo} hoje?")
 
-            # Substituir placeholders
-            # TODO: Buscar nome da criança do banco
             pergunta = pergunta_template.replace("{da_crianca}", "do Bernardo")
             pergunta = pergunta.replace("{a_crianca}", "o Bernardo")
             pergunta = pergunta.replace("{periodo}", "hoje")
 
-            # Anexar pergunta à resposta com quebra de linha
-            resposta_final = f"{resposta_atual}\n\n{pergunta}"
+            client = get_openai_client()
+            prompt_integracao = f"""Você é o Manolo, um assistente acolhedor de desenvolvimento infantil.
+Você acabou de formular a seguinte resposta para a família:
+"{resposta_atual}"
+
+Sua tarefa agora é emendar a seguinte pergunta no final dessa resposta:
+"{pergunta}"
+
+Reescreva a mensagem final garantindo que a transição para a pergunta seja super natural, fluida e calorosa (não pareça um robô mudando de assunto).
+Mantenha toda a informação da resposta original, apenas junte a pergunta de forma orgânica. Pode usar emojis se achar adequado."""
+
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "system", "content": prompt_integracao}],
+                    temperature=0.6,
+                )
+                resposta_final = response.choices[0].message.content
+            except Exception as e:
+                logger.error(f"[COBRANÇA] Erro no LLM de integração: {e}")
+                resposta_final = f"{resposta_atual}\n\n{pergunta}"
 
             logger.info(f"[COBRANÇA] Campo pendente: {proximo_campo}. Perguntando ao usuário.")
             return {"resposta": resposta_final, "campo_pendente": proximo_campo}
