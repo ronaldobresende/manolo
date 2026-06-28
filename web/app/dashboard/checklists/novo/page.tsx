@@ -7,7 +7,7 @@ import { apiFetch } from '@/lib/api'
 import { TagInput } from '@/components/ui/TagInput'
 import { Toggle } from '@/components/ui/Toggle'
 import { 
-  IconMoon, IconDeviceTv, IconUtensils, IconPuzzle, 
+  IconMoon, IconDeviceTv, IconSoup, IconPuzzle, 
   IconMessageCircle, IconBath, IconShirt, IconActivity, 
   IconSmile, IconClock, IconFileText, IconCheck, IconChevronDown, IconChevronUp 
 } from '@tabler/icons-react'
@@ -193,7 +193,7 @@ export default function ChecklistNovoPage() {
         </SectionCard>
 
         {/* ALIMENTACAO */}
-        <SectionCard title="Alimentação" icon={IconUtensils} isPartial={loadedSections.includes('alimentacao')}>
+        <SectionCard title="Alimentação" icon={IconSoup} isPartial={loadedSections.includes('alimentacao')}>
           <div className="flex gap-6 mb-4">
             <Toggle label="Comeu bem?" checked={form.alimentacao.comeu_bem} onChange={v => updateSection('alimentacao', 'comeu_bem', v)} />
             <Toggle label="Comeu sentado?" checked={form.alimentacao.comeu_sentado} onChange={v => updateSection('alimentacao', 'comeu_sentado', v)} />
