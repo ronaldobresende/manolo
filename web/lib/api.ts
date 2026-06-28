@@ -29,7 +29,7 @@ export class ApiError extends Error {
   }
 }
 
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`
 
   // Lê o token do cookie (funciona apenas no client-side, se httpOnly for false)
