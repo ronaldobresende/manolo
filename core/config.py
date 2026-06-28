@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     WHATSAPP_VERIFY_TOKEN: str = "manolo_default_secret"
     WHATSAPP_PHONE_ID: str | None = None
 
+    # Web App — CORS e autenticação futura
+    # WEB_CORS_ORIGINS: origens separadas por vírgula
+    # Ex: "https://manolo-app.vercel.app,http://localhost:3000"
+    WEB_CORS_ORIGINS: str = "http://localhost:3000"
+    # JWT — preparado para Fase 4.1 (autenticação)
+    JWT_SECRET_KEY: str = "TROCAR_EM_PRODUCAO_chave_muito_secreta_aqui"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_HOURS: int = 8
+
     # Cloudflare R2
     R2_ENDPOINT_URL: str | None = None
     R2_ACCESS_KEY_ID: str | None = None

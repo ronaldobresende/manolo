@@ -30,6 +30,7 @@ from agent.checklist import (
     obter_checklist_id_do_dia,
     CAMPO_CONFIG,
     _obter_ou_criar_checklist,
+    mesclar_checklists
 )
 from agent.profile import atualizar_perfil
 
@@ -53,6 +54,7 @@ class ManoloState(TypedDict):
     intencao: str  # "pergunta" | "checklist" | "resposta_pendencia" | ""
     dados_extraidos: dict | None
     campo_pendente: str | None  # Campo que o bot estava cobrando
+    data_contexto: str | None  # Data focada na conversa atual
 
     # Saída
     resposta: str
@@ -97,6 +99,8 @@ Ao responder:
 - Responda em português, de forma clara e acolhedora para a família.
 - REGRA DE SEGURANÇA (ESCOPO): Se a pergunta NÃO tiver absolutamente nenhuma relação com a criança, desenvolvimento infantil, saúde ou rotina da família (ex: receitas culinárias, curiosidades, programação, etc.), você DEVE recusar educadamente a resposta, lembrando o usuário de que seu propósito é focado no acompanhamento da criança.
 - REGRA CLÍNICA (DIAGNÓSTICOS): Você é um assistente de coleta de dados e acompanhamento. Você NUNCA DEVE EMITIR DIAGNÓSTICOS MÉDICOS, PSICOLÓGICOS OU PSIQUIÁTRICOS (ex: Autismo, TDAH, etc) sob nenhuma circunstância. Se questionado sobre suspeitas de diagnósticos, afirme claramente que não pode diagnosticar, recomende a busca por um profissional de saúde qualificado (médico, neuropediatra, terapeuta) e ofereça a geração de um relatório com o histórico de dados para a família levar à consulta.
+- REGRA DE CONTEXTO (RAG): O 'Perfil Atual da Criança' (Perfil Vivo) contém características GERAIS e atemporais da criança. Os 'Registros diários (Checklists)' contêm os eventos ESPECÍFICOS que aconteceram naqueles dias. Ao responder perguntas sobre o que ocorreu em dias específicos (ex: "o que ele comeu ontem?", "nos últimos dias"), baseie-se ÚNICA E EXCLUSIVAMENTE nos Registros Diários. NUNCA misture as preferências gerais do Perfil Vivo como se fossem eventos que acabaram de acontecer.
+
 Perfil do usuário atual: {perfil_usuario}
 Especialidade (se terapeuta): {especialidade}
 """
@@ -117,21 +121,31 @@ Especialidade (se terapeuta): {especialidade}
 def extrair_checklist_silencioso(state: ManoloState) -> dict:
     """
     NÓ 1 — Analisa toda mensagem recebida.
-    Se contiver dados de rotina da criança, extrai JSON e salva no banco.
-    Não altera a resposta do bot.
+    Se contiver dados de rotina da criança, extrai JSON (podendo fatiar em múltiplos dias) e salva no banco.
+    Trata correção retroativa de datas.
     """
     mensagem = state["mensagem"]
     crianca_id = state["crianca_id"]
     usuario_id = state["usuario_id"]
     data_hoje = _obter_data_hoje()
+    dia_semana_atual = datetime.now(pytz.timezone("America/Sao_Paulo")).strftime("%A")
+
+    # Mapeamento do dia da semana pra pt-br
+    dias_pt = {"Monday": "Segunda-feira", "Tuesday": "Terça-feira", "Wednesday": "Quarta-feira", 
+               "Thursday": "Quinta-feira", "Friday": "Sexta-feira", "Saturday": "Sábado", "Sunday": "Domingo"}
+    dia_semana_pt = dias_pt.get(dia_semana_atual, dia_semana_atual)
 
     client = get_openai_client()
 
-    prompt_extracao = f"""Você é um extrator silencioso de dados de rotina infantil.
-Analise a mensagem do usuário. Se ela contiver QUALQUER informação sobre a rotina
-diária da criança, extraia os dados.
-A data de hoje é {data_hoje}.
-Seja generoso na extração: se o usuário mencionar "dormiu bem", extraia como sono."""
+    prompt_extracao = f"""Você é um extrator de dados de rotina infantil.
+Analise a mensagem do usuário. Se contiver QUALQUER informação sobre a rotina diária, extraia os dados.
+A data de hoje é {data_hoje} ({dia_semana_pt}).
+
+REGRAS DE DATA:
+- Se a mensagem não mencionar data NENHUMA, não preencha a data do relato (retorne null) para usarmos o contexto atual.
+- Se a mensagem descrever eventos de MÚLTIPLOS dias (ex: "sábado fez x, ontem fez y, hoje z"), crie múltiplos itens na lista 'relatos'.
+- MATEMÁTICA DE DATAS: Se o usuário mencionar um dia da semana (ex: 'segunda', 'domingo'), calcule DE CABEÇA a data ISO correta do passado mais recente para esse dia, baseando-se em hoje ({data_hoje}).
+- CORREÇÃO RETROATIVA: Se o usuário estiver explicitamente dizendo que as mensagens dele anteriores eram de OUTRO dia (ex: "errei, aquilo era de ontem", "as infos são do dia 27"), marque correcao_retroativa = True e defina data_destino_correcao."""
 
     try:
         response = client.beta.chat.completions.parse(
@@ -144,17 +158,35 @@ Seja generoso na extração: se o usuário mencionar "dormiu bem", extraia como 
             temperature=0,
         )
         resultado = response.choices[0].message.parsed
+        
+        # Variável para propagar a nova data focada
+        nova_data_contexto = state.get("data_contexto") or data_hoje
 
         if resultado.contem_dados:
             logger.info(f"[EXTRAÇÃO SILENCIOSA] Dados de rotina detectados na mensagem.")
             
-            data_ref = resultado.data_referencia_iso or data_hoje
+            if resultado.correcao_retroativa and resultado.data_destino_correcao:
+                # O usuário pediu para corrigir a data retroativamente!
+                logger.info(f"[CORREÇÃO RETROATIVA] Movendo registros de {nova_data_contexto} para {resultado.data_destino_correcao}")
+                mesclar_checklists(crianca_id, nova_data_contexto, resultado.data_destino_correcao)
+                nova_data_contexto = resultado.data_destino_correcao
             
-            # Salva silenciosamente no banco
-            analise_json = resultado.model_dump_json()
-            salvar_checklist(crianca_id, usuario_id, data_ref, "whatsapp_texto", analise_json)
+            elif resultado.data_ambigua:
+                logger.info("[EXTRAÇÃO SILENCIOSA] Data ambígua detectada. Aguardando esclarecimento.")
+                # Não salva nada, só avisa a ambiguidade
+            else:
+                # Salva cada relato extraído silenciosamente no banco
+                for relato in resultado.relatos:
+                    data_ref = relato.data_referencia_iso or nova_data_contexto
+                    nova_data_contexto = data_ref  # A última data mencionada vira o novo contexto âncora
+                    
+                    analise_json = relato.model_dump_json()
+                    salvar_checklist(crianca_id, usuario_id, data_ref, "whatsapp_texto", analise_json)
             
-            return {"dados_extraidos": resultado.model_dump(mode='json')}
+            return {
+                "dados_extraidos": resultado.model_dump(mode='json'),
+                "data_contexto": nova_data_contexto
+            }
         else:
             logger.info("[EXTRAÇÃO SILENCIOSA] Nenhum dado de rotina na mensagem.")
             return {"dados_extraidos": None}
@@ -264,60 +296,75 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
 @traceable(name="processar_checklist_completo")
 def processar_checklist_completo(state: ManoloState) -> dict:
     """
-    NÓ 4 — Relato espontâneo longo. Estrutura e salva o checklist.
+    NÓ 4 — Relato espontâneo. Gera uma resposta amigável e trata correções de datas ou ambiguidades.
     """
     mensagem = state["mensagem"]
-    crianca_id = state["crianca_id"]
-    usuario_id = state["usuario_id"]
     nome_usuario = state["nome_usuario"]
     data_hoje = _obter_data_hoje()
+    
+    dados = state.get("dados_extraidos", {})
+    if not dados:
+        dados = {}
 
-    # A extração silenciosa (Nó 1) já salvou os dados.
-    # Aqui geramos apenas uma resposta amigável de confirmação.
-    from datetime import timedelta
-    
-    dados = state.get("dados_extraidos")
-    campos_salvos = []
-    data_ref_str = data_hoje
-    
-    if dados:
-        if dados.get("data_referencia_iso"):
-            data_ref_str = dados["data_referencia_iso"]
+    client = get_openai_client()
+
+    # 1. Tratar Ambiguidade de Data
+    if dados.get("data_ambigua"):
+        return {"resposta": "Que ótimo saber disso! 🥰 Você consegue me dizer mais ou menos qual dia foi isso, para eu anotar certinho na rotina?"}
+
+    # 2. Tratar Correção Retroativa
+    if dados.get("correcao_retroativa") and dados.get("data_destino_correcao"):
+        data_destino = dados["data_destino_correcao"]
+        
+        from datetime import datetime
+        try:
+            dt = datetime.strptime(data_destino, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except:
+            dt = data_destino
             
-        if dados.get("campos_preenchidos"):
-            campos_salvos = [k for k, v in dados["campos_preenchidos"].items() if v]
+        return {"resposta": f"Ops, entendi perfeitamente! Já peguei os registros e movi tudo para o dia {dt}. Tudo certo por aqui! Tem mais alguma coisa desse dia que você queira adicionar? 📝"}
 
+    # 3. Relato Normal (Agradecimento empático)
+    # Pega as datas que foram extraídas na mensagem atual
+    datas_extraidas = set()
+    if dados.get("relatos"):
+        for relato in dados["relatos"]:
+            if relato.get("data_referencia_iso"):
+                datas_extraidas.add(relato["data_referencia_iso"])
+    
+    # Se o LLM não extraiu data, assume a data de contexto ancorada
+    data_ancorada = state.get("data_contexto") or data_hoje
+    if not datas_extraidas:
+        datas_extraidas.add(data_ancorada)
+
+    # Formatar as datas para o texto (ex: "hoje (28/06)" ou "dia 27/06")
+    from datetime import datetime, timedelta
     dt_hoje = datetime.strptime(data_hoje, "%Y-%m-%d")
     ontem = (dt_hoje - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    try:
-        dt_ref = datetime.strptime(data_ref_str, "%Y-%m-%d")
-        data_formatada = dt_ref.strftime("%d/%m/%Y")
-    except Exception:
-        data_formatada = data_ref_str
+    periodos = []
+    for d_iso in sorted(datas_extraidas):
+        try:
+            d_fmt = datetime.strptime(d_iso, "%Y-%m-%d").strftime("%d/%m/%Y")
+            if d_iso == data_hoje:
+                periodos.append(f"hoje ({d_fmt})")
+            elif d_iso == ontem:
+                periodos.append(f"ontem ({d_fmt})")
+            else:
+                periodos.append(f"dia {d_fmt}")
+        except Exception:
+            periodos.append(d_iso)
+            
+    periodo_texto = " e ".join(periodos)
 
-    try:
-        hoje_formatado = dt_hoje.strftime("%d/%m/%Y")
-        ontem_formatado = (dt_hoje - timedelta(days=1)).strftime("%d/%m/%Y")
-    except Exception:
-        hoje_formatado = data_hoje
-        ontem_formatado = (dt_hoje - timedelta(days=1)).strftime("%d/%m/%Y") if 'dt_hoje' in locals() else ""
-
-    if data_ref_str == data_hoje:
-        periodo_texto = f"hoje ({hoje_formatado})"
-    elif data_ref_str == ontem:
-        periodo_texto = f"ontem ({ontem_formatado})"
-    else:
-        periodo_texto = f"o dia {data_formatada}"
-
-    client = get_openai_client()
-    prompt_empatia = f"""A mãe acabou de enviar um relato livre sobre a rotina da criança:
+    prompt_empatia = f"""A mãe enviou um relato livre sobre a rotina da criança:
 "{mensagem}"
-Os dados já foram extraídos e salvos no sistema (referentes a {periodo_texto}).
-Gere uma resposta curta (1 a 2 parágrafos no máximo), muito acolhedora e empática sobre o que ela relatou.
-Se houver indícios de sentimentos, dificuldades ou conquistas da criança, valide isso com empatia.
-Finalize a mensagem confirmando que você registrou as informações para {periodo_texto} com um emoji.
-Use um tom caloroso, prestativo e natural. NÃO faça perguntas, pois o sistema fará a cobrança em seguida se necessário."""
+
+Você já extraiu silenciosamente e guardou esses dados no banco para o(s) período(s): {periodo_texto}.
+Sua tarefa é gerar uma resposta curta (máximo 2 parágrafos), acolhedora e empática.
+Valide eventuais sentimentos, dificuldades ou conquistas citadas de forma natural.
+Finalize a mensagem apenas confirmando de forma sutil: "Anotei as informações para [periodo_texto] ✅" (para que a mãe saiba qual dia o sistema deduziu).
+NÃO faça perguntas investigativas, o sistema já fará isso depois se necessário."""
 
     try:
         response = client.chat.completions.create(
@@ -328,11 +375,7 @@ Use um tom caloroso, prestativo e natural. NÃO faça perguntas, pois o sistema 
         resposta = response.choices[0].message.content
     except Exception as e:
         logger.error(f"[CHECKLIST COMPLETO] Erro na geração empática: {e}")
-        if campos_salvos:
-            campos_str = ", ".join(campos_salvos)
-            resposta = f"Anotei as informações sobre {campos_str} para {periodo_texto}. ✅"
-        else:
-            resposta = f"Obrigado pelo relato, {nome_usuario}! Registrei as informações para {periodo_texto}. ✅"
+        resposta = f"Obrigado pelo relato, {nome_usuario}! Registrei as informações para {periodo_texto}. ✅"
 
     return {"resposta": resposta}
 
@@ -378,10 +421,11 @@ Se não houver dados estruturados compatíveis, faça o melhor esforço e preenc
         else:
             dados_campo = {"notas": mensagem}
 
-        # Salvar no banco
-        checklist_id = obter_checklist_id_do_dia(crianca_id, data_hoje)
+        # Salvar no banco usando data_contexto
+        data_ancorada = state.get("data_contexto") or data_hoje
+        checklist_id = obter_checklist_id_do_dia(crianca_id, data_ancorada)
         if not checklist_id:
-            checklist_id = _obter_ou_criar_checklist(crianca_id, usuario_id, data_hoje, "whatsapp_texto")
+            checklist_id = _obter_ou_criar_checklist(crianca_id, usuario_id, data_ancorada, "whatsapp_texto")
 
         salvar_campo_individual(checklist_id, campo_pendente, dados_campo)
 
@@ -400,29 +444,52 @@ def verificar_e_cobrar_pendencia(state: ManoloState) -> dict:
     crianca_id = state["crianca_id"]
     resposta_atual = state["resposta"]
     data_hoje = _obter_data_hoje()
+    
+    # Se a intenção era corrigir data de forma retroativa, pula a cobrança pra focar só no "CTRL+Z"
+    dados = state.get("dados_extraidos", {})
+    if dados and dados.get("correcao_retroativa") and dados.get("data_destino_correcao"):
+        return {"resposta": resposta_atual, "campo_pendente": None}
+    
+    # Se era uma data ambígua aguardando resposta, pula a cobrança
+    if dados and dados.get("data_ambigua"):
+        return {"resposta": resposta_atual, "campo_pendente": None}
+
+    # Verifica na data_contexto (ou hoje se não houver contexto)
+    data_ancorada = state.get("data_contexto") or data_hoje
 
     try:
-        campos_ausentes = buscar_campos_ausentes(crianca_id, data_hoje)
+        campos_ausentes = buscar_campos_ausentes(crianca_id, data_ancorada)
 
         if campos_ausentes:
             proximo_campo = campos_ausentes[0]
             config = CAMPO_CONFIG.get(proximo_campo, {})
-            pergunta_template = config.get("pergunta", f"Como foi {proximo_campo} hoje?")
+            pergunta_template = config.get("pergunta", f"Como foi {proximo_campo}?")
 
             pergunta = pergunta_template.replace("{da_crianca}", "do Bernardo")
             pergunta = pergunta.replace("{a_crianca}", "o Bernardo")
-            pergunta = pergunta.replace("{periodo}", "hoje")
+            
+            # Ajustar texto de tempo para a pergunta
+            if data_ancorada == data_hoje:
+                pergunta = pergunta.replace("{periodo}", "hoje")
+            else:
+                from datetime import datetime, timedelta
+                dt_hoje = datetime.strptime(data_hoje, "%Y-%m-%d")
+                ontem = (dt_hoje - timedelta(days=1)).strftime("%Y-%m-%d")
+                if data_ancorada == ontem:
+                    pergunta = pergunta.replace("{periodo}", "ontem")
+                else:
+                    pergunta = pergunta.replace("{periodo}", f"no dia {datetime.strptime(data_ancorada, '%Y-%m-%d').strftime('%d/%m/%Y')}")
 
             client = get_openai_client()
             prompt_integracao = f"""Você é o Manolo, um assistente acolhedor de desenvolvimento infantil.
 Você acabou de formular a seguinte resposta para a família:
 "{resposta_atual}"
 
-Sua tarefa agora é emendar a seguinte pergunta no final dessa resposta:
+Sua tarefa agora é juntar a seguinte pergunta no final dessa resposta:
 "{pergunta}"
 
-Reescreva a mensagem final garantindo que a transição para a pergunta seja super natural, fluida e calorosa (não pareça um robô mudando de assunto).
-Mantenha toda a informação da resposta original, apenas junte a pergunta de forma orgânica. Pode usar emojis se achar adequado."""
+OBRIGATÓRIO: Sua mensagem final DEVE terminar com a pergunta acima. Não engula, mude ou omita a pergunta, ela é essencial para a extração do banco.
+Reescreva a transição para que fique um pouco mais fluida, mas a frase final deve ser a pergunta! Pode usar emojis."""
 
             try:
                 response = client.chat.completions.create(
@@ -514,10 +581,14 @@ def executar_grafo(
 
     # Recuperar campo_pendente do estado anterior (se houver)
     campo_pendente_anterior = None
+    data_contexto_anterior = _obter_data_hoje()
+    
     try:
         estado_anterior = manolo_graph.get_state(config)
         if estado_anterior and estado_anterior.values:
             campo_pendente_anterior = estado_anterior.values.get("campo_pendente")
+            if estado_anterior.values.get("data_contexto"):
+                data_contexto_anterior = estado_anterior.values.get("data_contexto")
     except Exception:
         pass  # Sem estado anterior, segue normalmente
 
@@ -532,6 +603,7 @@ def executar_grafo(
             "intencao": "",
             "dados_extraidos": None,
             "campo_pendente": campo_pendente_anterior,
+            "data_contexto": data_contexto_anterior,
             "resposta": "",
         },
         config,

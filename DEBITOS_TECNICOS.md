@@ -28,3 +28,22 @@ Este documento registra as inconsistências de comportamento e problemas arquite
 * **Impacto:** Se o usuário perguntar *"O que o Bernardo comeu hoje?"* ou *"Como foi a fono de hoje?"*, a busca semântica pode trazer trechos de documentos antigos de 6 meses atrás porque contêm a palavra "hoje" ou "alimentação". O LLM, ao ler *"Trecho Documento: Hoje o Bernardo comeu..."*, pode responder como se isso estivesse acontecendo na data atual.
 * **Solução:** Modificar a tabela de `documento_chunks` ou a consulta RAG para sempre retornar e exibir a data de criação do documento como metadado explícito no prompt do LLM (ex: `--- Trecho de Laudo Fonoaudiológico de 10/12/2025 ---`).
 
+---
+
+## 5. Web App sem Autenticação (Fase 4 MVP) — [PENDENTE]
+
+* **O Problema:** O Web App (Fase 4) está em produção **sem autenticação**. Todas as rotas `/api/*` são públicas. Qualquer pessoa com a URL do Render consegue acessar os dados.
+* **Escopo:** Aceitável no MVP porque o app é de uso pessoal do admin, a URL do Render não é divulgada, e os dados são de teste controlado.
+* **Solução (Fase 4.1):**
+  - `POST /api/auth/login` → email + senha → JWT (python-jose, bcrypt)
+  - JWT em cookie `httpOnly` via Next.js Server Action
+  - Middleware Next.js: verificar cookie em `/dashboard/*` → redirect para `/login`
+  - Renovação automática 30min antes de expirar (TTL: 8 horas)
+  - Adicionar coluna `email_web` + `senha_hash` à tabela `usuarios` (migration já criada em `scripts/migrate_web.sql`)
+  - `JWT_SECRET_KEY` no Render (variável de ambiente gerada via `python -c "import secrets; print(secrets.token_hex(32))"`)
+* **Arquivos preparados:**
+  - `web/lib/auth.ts` — stub com TODO detalhado
+  - `core/config.py` — `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_EXPIRE_HOURS` já declarados
+  - `requirements.txt` — `python-jose[cryptography]` e `bcrypt` já adicionados
+
+

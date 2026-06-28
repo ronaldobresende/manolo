@@ -19,6 +19,11 @@ python-dotenv
 pytz
 boto3
 
+# Web App (Fase 4)
+python-multipart       # upload de PDF via /api/documentos
+python-jose[cryptography]  # JWT — preparado para auth (Fase 4.1)
+bcrypt                 # hash de senha — preparado para auth (Fase 4.1)
+
 # Dependências para OCR
 pytesseract
 pdf2image

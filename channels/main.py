@@ -11,6 +11,7 @@ import os
 import asyncio
 
 from fastapi import FastAPI, Request, Response, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 
 from core.database import get_connection
 from core.config import settings
@@ -21,7 +22,24 @@ from agent.agent import executar_grafo
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Manolo API", description="Webhook para WhatsApp")
+app = FastAPI(title="Manolo API", description="Webhook WhatsApp + API Web (Fase 4)")
+
+# CORS para o Web App (Vercel)
+# WEB_CORS_ORIGINS no .env: ex. "https://manolo-app.vercel.app,http://localhost:3000"
+_cors_origins_raw = getattr(settings, "WEB_CORS_ORIGINS", "http://localhost:3000")
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Montar rotas da API web
+from channels.api import api_router  # noqa: E402
+app.include_router(api_router)
 
 
 # ============================================================

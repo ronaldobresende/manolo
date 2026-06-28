@@ -78,9 +78,15 @@ class CamposPreenchidos(BaseModel):
     tela: Optional[TelaModel] = None
     rotina: Optional[RotinaModel] = None
 
+class RelatoDiario(BaseModel):
+    data_referencia_iso: Optional[str] = Field(None, description="Data à qual o relato se refere, no formato YYYY-MM-DD.")
+    campos_preenchidos: CamposPreenchidos = Field(default_factory=CamposPreenchidos)
+
 class LLMChecklistResponse(BaseModel):
     """Modelo principal que envolve todos os campos detectados na mensagem."""
     contem_dados: bool = Field(description="Indica se a mensagem do usuário contêm QUALQUER informação sobre a rotina/dia a dia da criança.")
-    data_referencia_iso: Optional[str] = Field(None, description="Data à qual o relato se refere, no formato YYYY-MM-DD. Se a mensagem diz 'ontem', calcule a data baseada em {data_hoje}. Se não houver indicativo que é outro dia, use {data_hoje}.")
-    campos_preenchidos: CamposPreenchidos = Field(default_factory=CamposPreenchidos)
+    data_ambigua: bool = Field(False, description="True se o usuário mencionou um dia muito vago (ex: 'semana passada', 'outro dia') impossível de mapear para uma data exata.")
+    correcao_retroativa: bool = Field(False, description="True se o usuário estiver explicitamente corrigindo a data de relatos recém-enviados (ex: 'errei, aquilo não era pra hoje, era de ontem').")
+    data_destino_correcao: Optional[str] = Field(None, description="Se correcao_retroativa for True, preencha a data ISO correta para a qual os dados devem ser movidos.")
+    relatos: List[RelatoDiario] = Field(default_factory=list, description="Lista de relatos diários extraídos da mensagem.")
     campos_ausentes: List[str] = Field(default_factory=list, description="Lista apenas as categorias (ex: 'sono', 'alimentacao') que NÃO foram mencionadas de forma alguma na mensagem.")

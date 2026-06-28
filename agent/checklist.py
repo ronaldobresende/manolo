@@ -6,6 +6,7 @@ Responsável por salvar dados parciais de rotina e consultar campos ausentes par
 import logging
 import json
 from datetime import date, timedelta
+from typing import Optional, List
 from core.database import get_connection
 
 logger = logging.getLogger(__name__)
@@ -318,6 +319,82 @@ def buscar_campos_ausentes(crianca_id: str, data_ref: str = None) -> list[str]:
         return list(PRIORIDADE_CAMPOS)  # Em caso de erro, assume todos ausentes
 
     return campos_ausentes
+
+
+def mesclar_checklists(crianca_id: str, data_origem: str, data_destino: str) -> bool:
+    """
+    Move todos os registros das tabelas filhas do checklist da data_origem para a data_destino.
+    Resolve conflitos priorizando ou mesclando os dados com a data_destino.
+    """
+    if data_origem == data_destino:
+        return True
+
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # 1. Obter os IDs
+                cur.execute("SELECT id FROM checklists WHERE crianca_id = %s AND data = %s", (crianca_id, data_origem))
+                row_origem = cur.fetchone()
+                if not row_origem:
+                    return True  # Nada a mesclar
+
+                id_origem = row_origem['id']
+
+                cur.execute("SELECT id FROM checklists WHERE crianca_id = %s AND data = %s", (crianca_id, data_destino))
+                row_destino = cur.fetchone()
+
+                # Se não existir destino, simplesmente atualizamos a data do checklist origem
+                if not row_destino:
+                    cur.execute("UPDATE checklists SET data = %s WHERE id = %s", (data_destino, id_origem))
+                    conn.commit()
+                    logger.info(f"[MESCLA] Checklist {id_origem} movido de {data_origem} para {data_destino}.")
+                    return True
+
+                id_destino = row_destino['id']
+
+                # Se ambos existem, precisamos transferir tabela a tabela
+                tabelas = [
+                    'checklist_sono', 'checklist_alimentacao', 'checklist_brincar', 
+                    'checklist_comunicacao', 'checklist_higiene', 'checklist_humor', 
+                    'checklist_movimento', 'checklist_rotina', 'checklist_tela', 
+                    'checklist_vestuario'
+                ]
+
+                for tabela in tabelas:
+                    cur.execute(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (id_origem,))
+                    dados_origem = cur.fetchone()
+                    
+                    if dados_origem:
+                        cur.execute(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (id_destino,))
+                        dados_destino = cur.fetchone()
+                        
+                        if not dados_destino:
+                            # Destino não tem essa tabela, só atualizar o ID
+                            cur.execute(f"UPDATE {tabela} SET checklist_id = %s WHERE checklist_id = %s", (id_destino, id_origem))
+                        else:
+                            # Destino já tem. Num cenário MVP, vamos atualizar os dados do destino com coalescência 
+                            # (isso exigiria lógica dinâmica complexa em SQL ou Python).
+                            # Por simplicidade do MVP, vamos dar preferência à origem (já que é o relato mais recente que a mãe corrigiu).
+                            
+                            # Remove ID original do dict
+                            colunas = [k for k in dados_origem.keys() if k not in ('id', 'checklist_id', 'criado_em', 'atualizado_em')]
+                            set_clause = ", ".join([f"{col} = COALESCE(%s, {tabela}.{col})" for col in colunas])
+                            valores = [dados_origem[col] for col in colunas]
+                            valores.append(id_destino)
+                            
+                            cur.execute(f"UPDATE {tabela} SET {set_clause} WHERE checklist_id = %s", tuple(valores))
+                            cur.execute(f"DELETE FROM {tabela} WHERE checklist_id = %s", (id_origem,))
+                            
+                # Exclui o checklist origem (as tabelas filhas já foram movidas/deletadas)
+                cur.execute("DELETE FROM checklists WHERE id = %s", (id_origem,))
+                conn.commit()
+                logger.info(f"[MESCLA] Checklist {id_origem} ({data_origem}) mesclado em {id_destino} ({data_destino}).")
+                return True
+                
+    except Exception as e:
+        logger.error(f"Erro ao mesclar checklists de {data_origem} para {data_destino}: {e}")
+        return False
+
 
 
 def obter_checklist_id_do_dia(crianca_id: str, data_ref: str = None) -> str | None:

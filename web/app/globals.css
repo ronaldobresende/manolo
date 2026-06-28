@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   BASE
+   ============================================================ */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-neutral-bg text-manolo-text font-sans antialiased;
+  }
+
+  /* Scrollbar personalizada — sutil, clínica */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-primary-200 rounded-pill; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-primary-300; }
+}
+
+/* ============================================================
+   COMPONENTS
+   ============================================================ */
+@layer components {
+
+  /* Card base */
+  .card {
+    @apply bg-neutral-surface rounded-card shadow-card border border-neutral-border
+           transition-all duration-200;
+  }
+  .card:hover { @apply shadow-card-hover; }
+
+  /* Card de domínio de perfil */
+  .domain-card {
+    @apply card p-5 flex flex-col gap-3;
+  }
+
+  /* Botão primário */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-primary text-white font-medium text-sm
+           px-4 py-2.5 rounded-card
+           transition-all duration-150
+           hover:bg-primary-600 active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Botão secundário */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-neutral-surface text-manolo-text font-medium text-sm
+           px-4 py-2.5 rounded-card border border-neutral-border
+           transition-all duration-150
+           hover:bg-primary-50 hover:border-primary-200
+           active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Botão ghost */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           text-manolo-muted font-medium text-sm
+           px-3 py-2 rounded-lg
+           transition-all duration-150
+           hover:bg-primary-50 hover:text-primary
+           active:scale-95;
+  }
+
+  /* Input padrão */
+  .input {
+    @apply w-full px-3 py-2.5 text-sm
+           bg-neutral-surface border border-neutral-border rounded-lg
+           text-manolo-text placeholder:text-manolo-muted
+           transition-colors duration-150
+           focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary;
+  }
+
+  /* Select padrão */
+  .select {
+    @apply input appearance-none cursor-pointer;
+  }
+
+  /* Label */
+  .label {
+    @apply block text-xs font-medium text-manolo-muted uppercase tracking-wide mb-1;
+  }
+
+  /* Badge de status */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5
+           text-xs font-medium rounded-pill;
+  }
+  .badge-green  { @apply badge bg-accent-muted text-primary-700; }
+  .badge-yellow { @apply badge bg-amber-100 text-amber-700; }
+  .badge-red    { @apply badge bg-red-100 text-red-700; }
+  .badge-gray   { @apply badge bg-neutral-border text-manolo-muted; }
+
+  /* Tabela */
+  .table-row {
+    @apply border-b border-neutral-border last:border-0
+           hover:bg-primary-50 transition-colors duration-100 cursor-pointer;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse bg-neutral-border rounded;
+  }
+
+  /* Título de seção */
+  .section-title {
+    @apply text-base font-semibold text-manolo-text;
+  }
+
+  /* Subtítulo de campo */
+  .field-label {
+    @apply text-xs text-manolo-muted font-medium;
+  }
+
+  /* Valor de campo */
+  .field-value {
+    @apply text-sm text-manolo-text;
+  }
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar-link {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+         text-manolo-muted transition-all duration-150
+         hover:bg-primary-50 hover:text-primary;
+}
+.sidebar-link.active {
+  @apply bg-primary-50 text-primary;
+}
+.sidebar-link.active svg {
+  @apply text-primary;
+}
+
+/* ============================================================
+   RECHARTS — reset de estilos para o tema clínico
+   ============================================================ */
+.recharts-cartesian-grid line { stroke: #E8E4DE; }
+.recharts-text { fill: #6B7F78; font-size: 12px; }
+.recharts-tooltip-wrapper { filter: drop-shadow(0 4px 12px rgba(27,45,39,0.1)); }
