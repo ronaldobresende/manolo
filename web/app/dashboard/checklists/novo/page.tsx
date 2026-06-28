@@ -9,7 +9,7 @@ import { Toggle } from '@/components/ui/Toggle'
 import { 
   IconMoon, IconDeviceTv, IconSoup, IconPuzzle, 
   IconMessageCircle, IconBath, IconShirt, IconActivity, 
-  IconSmile, IconClock, IconFileText, IconCheck, IconChevronDown, IconChevronUp 
+  IconMoodSmile, IconClock, IconFileText, IconCheck, IconChevronDown, IconChevronUp 
 } from '@tabler/icons-react'
 
 // Estrutura de Estado Padrão
@@ -281,7 +281,7 @@ export default function ChecklistNovoPage() {
         </SectionCard>
 
         {/* HUMOR */}
-        <SectionCard title="Humor e Regulação" icon={IconSmile} isPartial={loadedSections.includes('humor')}>
+        <SectionCard title="Humor e Regulação" icon={IconMoodSmile} isPartial={loadedSections.includes('humor')}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="label">Humor Geral</label>
