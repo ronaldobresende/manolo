@@ -99,7 +99,7 @@ export default function ChecklistNovoPage() {
         const secs = []
         for (const [secName, secData] of Object.entries(res.secoes || {})) {
           if (secData) {
-            dbState[secName] = { ...DEFAULT_STATE[secName as keyof typeof DEFAULT_STATE], ...secData }
+            dbState[secName] = { ...(DEFAULT_STATE[secName as keyof typeof DEFAULT_STATE] as any), ...(secData as any) }
             secs.push(secName)
           }
         }
