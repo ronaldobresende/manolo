@@ -55,6 +55,16 @@ def _execute(sql: str, params: tuple = ()) -> None:
         conn.commit()
 
 
+def _execute_returning(sql: str, params: tuple = ()) -> dict | None:
+    """Executa INSERT/UPDATE ... RETURNING e retorna a linha afetada."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            result = cur.fetchone()
+        conn.commit()
+        return result
+
+
 def init_db():
     """
     Inicializa o banco de dados criando a extensão pgvector e todas as tabelas,
