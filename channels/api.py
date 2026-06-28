@@ -16,24 +16,15 @@ from pydantic import BaseModel
 
 from channels.schemas import ChecklistPayload
 
-from core.database import get_connection, _query_one, _query_many, _execute
+from core.database import get_connection, _query_one, _query_many, _execute, _execute_returning
 from core.config import settings
 from core.security import get_current_user
+from core.storage import upload_file_to_r2
 
 logger = logging.getLogger(__name__)
 
 # Aplicar proteção a todas as rotas deste router
 api_router = APIRouter(prefix="/api", tags=["web"], dependencies=[Depends(get_current_user)])
-
-
-def _execute_returning(sql: str, params: tuple = ()) -> dict | None:
-    """Executa INSERT ... RETURNING e retorna a linha inserida."""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-            result = cur.fetchone()
-        conn.commit()
-        return result
 
 
 # ============================================================
@@ -52,13 +43,57 @@ async def api_status():
 
 @api_router.get("/criancas")
 async def listar_criancas():
-    """Lista todas as crianças da conta. Usado pelo seletor no frontend."""
+    """Retorna dados simplificados das crianças disponíveis."""
     rows = _query_many("""
-        SELECT id, nome, data_nascimento, diagnosticos, criado_em
+        SELECT id, nome, data_nascimento, foto_url
         FROM criancas
         ORDER BY nome
     """)
-    return [dict(r) for r in rows]
+    # Retorna o perfil atual junto
+    res = []
+    for r in rows:
+        d = dict(r)
+        d["perfil_vivo"] = _query_one(
+            "SELECT * FROM perfil_crianca WHERE crianca_id = %s",
+            (r["id"],)
+        )
+        res.append(d)
+    return res
+
+@api_router.post("/criancas/{crianca_id}/foto")
+async def upload_foto_crianca(crianca_id: str, file: UploadFile = File(...)):
+    """Faz upload de uma nova foto de perfil para a criança usando o bucket R2."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Arquivo inválido")
+    
+    ext = file.filename.split(".")[-1]
+    object_name = f"criancas/{crianca_id}/foto_perfil.{ext}"
+    
+    # Salvar em arquivo temporário para usar a função upload_file_to_r2
+    fd, tmp_path = tempfile.mkstemp(suffix=f".{ext}")
+    try:
+        with os.fdopen(fd, 'wb') as f:
+            f.write(await file.read())
+        
+        # Upload para o R2
+        public_url = upload_file_to_r2(tmp_path, object_name)
+        if not public_url:
+            raise HTTPException(status_code=500, detail="Erro ao enviar foto para o R2.")
+        
+        # Salvar a URL no banco de dados
+        _execute("""
+            UPDATE criancas
+            SET foto_url = %s
+            WHERE id = %s
+        """, (public_url, crianca_id))
+        
+        return {"foto_url": public_url}
+    except Exception as e:
+        logger.error(f"[API] Erro no upload de foto da criança: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Erro ao processar imagem: {str(e)}")
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 # ============================================================
@@ -647,3 +682,59 @@ async def toggle_usuario_ativo(usuario_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado.")
     return dict(row)
+
+
+class UsuarioUpdate(BaseModel):
+    nome: Optional[str] = None
+    telefone_whatsapp: Optional[str] = None
+    email: Optional[str] = None
+    perfil: Optional[str] = None
+    senha: Optional[str] = None
+
+@api_router.patch("/usuarios/{usuario_id}")
+async def atualizar_usuario(usuario_id: str, body: UsuarioUpdate):
+    """Atualiza dados do usuário (incluindo senha se fornecida)."""
+    # Construir query dinamicamente baseada nos campos fornecidos
+    updates = []
+    values = []
+    
+    if body.nome is not None:
+        updates.append("nome = %s")
+        values.append(body.nome)
+    
+    if body.telefone_whatsapp is not None:
+        updates.append("telefone_whatsapp = %s")
+        values.append(body.telefone_whatsapp)
+        
+    if body.email is not None:
+        updates.append("email_web = %s")
+        values.append(body.email)
+        
+    if body.perfil is not None:
+        perfis_validos = ("admin", "família", "terapeuta")
+        if body.perfil not in perfis_validos:
+            raise HTTPException(status_code=400, detail=f"Perfil inválido. Use: {perfis_validos}")
+        updates.append("perfil = %s")
+        values.append(body.perfil)
+        
+    if body.senha is not None and body.senha.strip() != "":
+        hashed = get_password_hash(body.senha.strip())
+        updates.append("senha_hash = %s")
+        values.append(hashed)
+        
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nenhum dado fornecido para atualização.")
+        
+    query = f"UPDATE usuarios SET {', '.join(updates)} WHERE id = %s RETURNING id, nome, telefone_whatsapp, email_web as email, perfil, ativo, criado_em"
+    values.append(usuario_id)
+    
+    try:
+        atualizado = _execute_returning(query, tuple(values))
+        if not atualizado:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        return dict(atualizado)
+    except Exception as e:
+        if "unique" in str(e).lower():
+            raise HTTPException(status_code=409, detail="E-mail ou telefone já cadastrado.")
+        logger.error(f"[API] Erro ao atualizar usuário: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao atualizar usuário.")

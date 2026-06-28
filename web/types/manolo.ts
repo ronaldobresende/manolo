@@ -13,6 +13,7 @@ export interface Crianca {
   nome: string
   data_nascimento: string // ISO date string
   diagnosticos: string[]
+  foto_url?: string
   criado_em: string
 }
 

@@ -78,6 +78,32 @@ export async function getCriancas(): Promise<Crianca[]> {
   return apiFetch('/api/criancas')
 }
 
+export async function uploadFotoCrianca(criancaId: string, file: File): Promise<{ foto_url: string }> {
+  // Para upload de arquivo, não usamos json e não definimos Content-Type
+  // pois o fetch cuidará de montar o boundary do FormData automaticamente
+  const formData = new FormData()
+  formData.append('file', file)
+
+  let token = ''
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(^| )manolo_token=([^;]+)/)
+    if (match) token = match[2]
+  }
+
+  const res = await fetch(`${API_BASE}/api/criancas/${criancaId}/foto`, {
+    method: 'POST',
+    body: formData,
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+  })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new ApiError(res.status, data.detail || 'Erro ao enviar foto')
+  }
+
+  return res.json()
+}
+
 // ============================================================
 // PERFIL VIVO
 // ============================================================
@@ -233,4 +259,17 @@ export async function toggleUsuarioAtivo(
   usuarioId: string
 ): Promise<{ id: string; nome: string; ativo: boolean }> {
   return apiFetch(`/api/usuarios/${usuarioId}/ativo`, { method: 'PATCH' })
+}
+
+export async function atualizarUsuario(
+  usuarioId: string,
+  data: {
+    nome?: string
+    telefone_whatsapp?: string
+    email?: string
+    perfil?: string
+    senha?: string
+  }
+): Promise<Usuario> {
+  return apiFetch(`/api/usuarios/${usuarioId}`, { method: 'PATCH', body: JSON.stringify(data) })
 }

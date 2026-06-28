@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Header } from '@/components/layout/Header'
-import { getUsuarios, criarUsuario, toggleUsuarioAtivo } from '@/lib/api'
+import { getUsuarios, criarUsuario, toggleUsuarioAtivo, atualizarUsuario } from '@/lib/api'
 import type { Usuario } from '@/types/manolo'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -20,6 +20,16 @@ export default function UsuariosPage() {
   const [especialidade, setEspecialidade] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  // Estado da edição
+  const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
+  const [editNome, setEditNome] = useState('')
+  const [editTelefone, setEditTelefone] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editPerfil, setEditPerfil] = useState<typeof PERFIS[number]>('família')
+  const [editSenha, setEditSenha] = useState('')
+  const [salvandoEdit, setSalvandoEdit] = useState(false)
+  const [erroEdit, setErroEdit] = useState<string | null>(null)
 
   useEffect(() => {
     getUsuarios()
@@ -49,6 +59,42 @@ export default function UsuariosPage() {
       const atualizado = await toggleUsuarioAtivo(id)
       setUsuarios(prev => prev.map(u => u.id === id ? { ...u, ativo: atualizado.ativo } : u))
     } catch {}
+  }
+
+  const iniciarEdicao = (u: Usuario) => {
+    setUsuarioEditando(u)
+    setEditNome(u.nome)
+    setEditTelefone(u.telefone_whatsapp)
+    setEditEmail(u.email || '')
+    setEditPerfil((u.perfil as typeof PERFIS[number]) || 'família')
+    setEditSenha('')
+    setErroEdit(null)
+  }
+
+  const handleSalvarEdicao = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!usuarioEditando) return
+    if (!editNome || !editTelefone) { setErroEdit('Nome e telefone são obrigatórios.'); return }
+    
+    setSalvandoEdit(true)
+    setErroEdit(null)
+    try {
+      const dadosUpdate = {
+        nome: editNome !== usuarioEditando.nome ? editNome : undefined,
+        telefone_whatsapp: editTelefone !== usuarioEditando.telefone_whatsapp ? editTelefone : undefined,
+        email: editEmail !== (usuarioEditando.email || '') ? editEmail : undefined,
+        perfil: editPerfil !== usuarioEditando.perfil ? editPerfil : undefined,
+        senha: editSenha ? editSenha : undefined
+      }
+      
+      const atualizado = await atualizarUsuario(usuarioEditando.id, dadosUpdate)
+      setUsuarios(prev => prev.map(u => u.id === atualizado.id ? atualizado : u))
+      setUsuarioEditando(null)
+    } catch (err: unknown) {
+      setErroEdit(err instanceof Error ? err.message : 'Erro ao atualizar.')
+    } finally {
+      setSalvandoEdit(false)
+    }
   }
 
   const PERFIL_CLASSE: Record<string, string> = {
@@ -147,12 +193,20 @@ export default function UsuariosPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleToggle(u.id)}
-                      className="btn-ghost text-xs py-1"
-                    >
-                      {u.ativo ? 'Desativar' : 'Ativar'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => iniciarEdicao(u)}
+                        className="btn-ghost text-xs py-1 text-primary hover:bg-primary-50"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleToggle(u.id)}
+                        className="btn-ghost text-xs py-1"
+                      >
+                        {u.ativo ? 'Desativar' : 'Ativar'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -167,6 +221,57 @@ export default function UsuariosPage() {
         </div>
 
       </div>
+
+      {/* Modal Editar */}
+      {usuarioEditando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setUsuarioEditando(null)} />
+          <div className="relative card w-full max-w-lg p-5 animate-slide-up">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="section-title">Editar Usuário</h3>
+              <button onClick={() => setUsuarioEditando(null)} className="btn-ghost p-1">✕</button>
+            </div>
+            
+            <form onSubmit={handleSalvarEdicao} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="label">Nome *</label>
+                <input className="input" value={editNome} onChange={e => setEditNome(e.target.value)} />
+              </div>
+              
+              <div>
+                <label className="label">WhatsApp *</label>
+                <input className="input" value={editTelefone} onChange={e => setEditTelefone(e.target.value)} />
+              </div>
+              
+              <div>
+                <label className="label">Perfil *</label>
+                <select className="select" value={editPerfil} onChange={e => setEditPerfil(e.target.value as typeof PERFIS[number])}>
+                  {PERFIS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="label">Email Web</label>
+                <input type="email" className="input" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="email@exemplo.com" />
+              </div>
+              
+              <div>
+                <label className="label">Nova Senha</label>
+                <input type="password" className="input" value={editSenha} onChange={e => setEditSenha(e.target.value)} placeholder="Deixe em branco para manter" />
+              </div>
+
+              {erroEdit && <p className="sm:col-span-2 text-sm text-manolo-danger">{erroEdit}</p>}
+              
+              <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
+                <button type="button" onClick={() => setUsuarioEditando(null)} className="btn-ghost">Cancelar</button>
+                <button type="submit" disabled={salvandoEdit} className="btn-primary">
+                  {salvandoEdit ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }
