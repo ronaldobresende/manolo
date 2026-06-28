@@ -14,7 +14,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query, Depends
 from pydantic import BaseModel
 
-from core.database import get_connection
+from core.database import get_connection, _query_one, _query_many, _execute
 from core.config import settings
 from core.security import get_current_user
 
@@ -22,34 +22,6 @@ logger = logging.getLogger(__name__)
 
 # Aplicar proteção a todas as rotas deste router
 api_router = APIRouter(prefix="/api", tags=["web"], dependencies=[Depends(get_current_user)])
-
-
-# ============================================================
-# HELPERS
-# ============================================================
-
-def _query_one(sql: str, params: tuple = ()) -> dict | None:
-    """Executa query e retorna uma linha como dict (ou None)."""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchone()
-
-
-def _query_many(sql: str, params: tuple = ()) -> list[dict]:
-    """Executa query e retorna todas as linhas como lista de dicts."""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchall() or []
-
-
-def _execute(sql: str, params: tuple = ()) -> None:
-    """Executa comando DML (INSERT/UPDATE/DELETE) com commit."""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql, params)
-        conn.commit()
 
 
 def _execute_returning(sql: str, params: tuple = ()) -> dict | None:

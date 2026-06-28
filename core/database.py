@@ -31,6 +31,30 @@ def get_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 
+def _query_one(sql: str, params: tuple = ()) -> dict | None:
+    """Executa query e retorna uma linha como dict (ou None)."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchone()
+
+
+def _query_many(sql: str, params: tuple = ()) -> list[dict]:
+    """Executa query e retorna todas as linhas como lista de dicts."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchall() or []
+
+
+def _execute(sql: str, params: tuple = ()) -> None:
+    """Executa comando DML (INSERT/UPDATE/DELETE) com commit."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+        conn.commit()
+
+
 def init_db():
     """
     Inicializa o banco de dados criando a extensão pgvector e todas as tabelas,
