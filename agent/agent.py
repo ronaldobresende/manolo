@@ -18,6 +18,11 @@ from langgraph.checkpoint.memory import MemorySaver
 from core.memory import buscar_contexto_documentos, obter_perfil_vivo, buscar_contexto_checklists
 from core.clients import get_openai_client
 from core.config import settings
+from core.schemas import (
+    LLMChecklistResponse, SonoModel, HumorModel, ComunicacaoModel,
+    AlimentacaoModel, BrincarModel, HigieneModel, MovimentoModel,
+    VestuarioModel, TelaModel, RotinaModel
+)
 from agent.checklist import (
     salvar_checklist,
     salvar_campo_individual,
@@ -121,53 +126,34 @@ def extrair_checklist_silencioso(state: ManoloState) -> dict:
 
     client = get_openai_client()
 
-    prompt_extracao = """Você é um extrator silencioso de dados de rotina infantil.
+    prompt_extracao = f"""Você é um extrator silencioso de dados de rotina infantil.
 Analise a mensagem do usuário. Se ela contiver QUALQUER informação sobre a rotina
-diária da criança (sono, alimentação, humor, comunicação, brincar, higiene,
-vestuário, movimento, tela, rotina/transições), extraia em JSON.
-
-Retorne um JSON com a estrutura:
-{
-  "contem_dados": true/false,
-  "campos_preenchidos": {
-    "sono": {...} ou null,
-    "humor": {...} ou null,
-    "comunicacao": {...} ou null,
-    "alimentacao": {...} ou null,
-    "brincar": {...} ou null,
-    "higiene": {...} ou null,
-    "vestuario": {...} ou null,
-    "movimento": {...} ou null,
-    "tela": {...} ou null,
-    "rotina": {...} ou null
-  },
-  "campos_ausentes": ["lista dos campos que NÃO foram mencionados"]
-}
-
-Se a mensagem NÃO contiver dados de rotina, retorne:
-{"contem_dados": false, "campos_preenchidos": {}, "campos_ausentes": []}
-
-Seja generoso na extração: se o usuário mencionar "dormiu bem", extraia como sono.
-Se mencionar "comeu arroz", extraia como alimentação. Etc."""
+diária da criança, extraia os dados.
+A data de hoje é {data_hoje}.
+Seja generoso na extração: se o usuário mencionar "dormiu bem", extraia como sono."""
 
     try:
-        response = client.chat.completions.create(
+        response = client.beta.chat.completions.parse(
             model="gpt-4o-mini",
-            response_format={"type": "json_object"},
+            response_format=LLMChecklistResponse,
             messages=[
                 {"role": "system", "content": prompt_extracao},
                 {"role": "user", "content": mensagem},
             ],
             temperature=0,
         )
-        resultado = json.loads(response.choices[0].message.content)
+        resultado = response.choices[0].message.parsed
 
-        if resultado.get("contem_dados"):
+        if resultado.contem_dados:
             logger.info(f"[EXTRAÇÃO SILENCIOSA] Dados de rotina detectados na mensagem.")
+            
+            data_ref = resultado.data_referencia_iso or data_hoje
+            
             # Salva silenciosamente no banco
-            analise_json = json.dumps(resultado, ensure_ascii=False)
-            salvar_checklist(crianca_id, usuario_id, data_hoje, "whatsapp_texto", analise_json)
-            return {"dados_extraidos": resultado}
+            analise_json = resultado.model_dump_json()
+            salvar_checklist(crianca_id, usuario_id, data_ref, "whatsapp_texto", analise_json)
+            
+            return {"dados_extraidos": resultado.model_dump(mode='json')}
         else:
             logger.info("[EXTRAÇÃO SILENCIOSA] Nenhum dado de rotina na mensagem.")
             return {"dados_extraidos": None}
@@ -287,16 +273,47 @@ def processar_checklist_completo(state: ManoloState) -> dict:
 
     # A extração silenciosa (Nó 1) já salvou os dados.
     # Aqui geramos apenas uma resposta amigável de confirmação.
+    from datetime import timedelta
+    
     dados = state.get("dados_extraidos")
     campos_salvos = []
-    if dados and dados.get("campos_preenchidos"):
-        campos_salvos = [k for k, v in dados["campos_preenchidos"].items() if v]
+    data_ref_str = data_hoje
+    
+    if dados:
+        if dados.get("data_referencia_iso"):
+            data_ref_str = dados["data_referencia_iso"]
+            
+        if dados.get("campos_preenchidos"):
+            campos_salvos = [k for k, v in dados["campos_preenchidos"].items() if v]
+
+    dt_hoje = datetime.strptime(data_hoje, "%Y-%m-%d")
+    ontem = (dt_hoje - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    try:
+        dt_ref = datetime.strptime(data_ref_str, "%Y-%m-%d")
+        data_formatada = dt_ref.strftime("%d/%m/%Y")
+    except Exception:
+        data_formatada = data_ref_str
+
+    try:
+        hoje_formatado = dt_hoje.strftime("%d/%m/%Y")
+        ontem_formatado = (dt_hoje - timedelta(days=1)).strftime("%d/%m/%Y")
+    except Exception:
+        hoje_formatado = data_hoje
+        ontem_formatado = (dt_hoje - timedelta(days=1)).strftime("%d/%m/%Y") if 'dt_hoje' in locals() else ""
+
+    if data_ref_str == data_hoje:
+        periodo_texto = f"hoje ({hoje_formatado})"
+    elif data_ref_str == ontem:
+        periodo_texto = f"ontem ({ontem_formatado})"
+    else:
+        periodo_texto = f"o dia {data_formatada}"
 
     if campos_salvos:
         campos_str = ", ".join(campos_salvos)
-        resposta = f"Anotei as informações sobre {campos_str} para hoje ({data_hoje}). ✅"
+        resposta = f"Anotei as informações sobre {campos_str} para {periodo_texto}. ✅"
     else:
-        resposta = f"Obrigado pelo relato, {nome_usuario}! Registrei as informações para hoje. ✅"
+        resposta = f"Obrigado pelo relato, {nome_usuario}! Registrei as informações para {periodo_texto}. ✅"
 
     return {"resposta": resposta}
 
@@ -315,30 +332,39 @@ def processar_resposta_pendencia(state: ManoloState) -> dict:
 
     client = get_openai_client()
 
+    MAPA_SCHEMAS = {
+        "sono": SonoModel, "humor": HumorModel, "comunicacao": ComunicacaoModel,
+        "alimentacao": AlimentacaoModel, "brincar": BrincarModel, "higiene": HigieneModel,
+        "movimento": MovimentoModel, "vestuario": VestuarioModel, "tela": TelaModel, "rotina": RotinaModel
+    }
+
     # Estrutura a resposta como dados do campo pendente
     prompt = f"""O usuário respondeu à pergunta sobre '{campo_pendente}' da rotina da criança.
-Extraia os dados relevantes para esse campo específico.
-Retorne um JSON com a chave '{campo_pendente}' e os dados extraídos.
-Se não conseguir extrair dados úteis, retorne {{"{campo_pendente}": "Resposta livre: <mensagem resumida>"}}"""
+Extraia os dados estruturados relevantes para esse campo específico.
+Se não houver dados estruturados compatíveis, faça o melhor esforço e preencha as notas."""
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": mensagem},
-            ],
-            temperature=0,
-        )
-        dados_campo = json.loads(response.choices[0].message.content)
+        schema_model = MAPA_SCHEMAS.get(campo_pendente)
+        if schema_model:
+            response = client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                response_format=schema_model,
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": mensagem},
+                ],
+                temperature=0,
+            )
+            dados_campo = response.choices[0].message.parsed.model_dump(mode='json')
+        else:
+            dados_campo = {"notas": mensagem}
 
         # Salvar no banco
         checklist_id = obter_checklist_id_do_dia(crianca_id, data_hoje)
         if not checklist_id:
             checklist_id = _obter_ou_criar_checklist(crianca_id, usuario_id, data_hoje, "whatsapp_texto")
 
-        salvar_campo_individual(checklist_id, campo_pendente, dados_campo.get(campo_pendente, dados_campo))
+        salvar_campo_individual(checklist_id, campo_pendente, dados_campo)
 
         resposta = f"Anotei as informações sobre {campo_pendente}! 👍"
         return {"resposta": resposta, "campo_pendente": None}
