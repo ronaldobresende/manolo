@@ -57,6 +57,9 @@ Agente usado: Claude Opus 4.6
 - [x] Refatorar `checklist.py` para dados parciais (nunca sobrescrever com null) e função `buscar_campos_ausentes`.
 - [x] Simplificar webhook `main.py` para delegar 100% ao grafo LangGraph.
 - [x] Criar KB Denver ESDM em `core/kb/` (referência qualitativa para o Perfil Vivo).
+- [x] Corrigir KeyError no roteamento condicional de arestas do LangGraph em `agent.py`.
+- [x] Envelopar o cliente OpenAI compartilhado (`clients.py`) com `wrap_openai` para ativar traces finos da LLM no LangSmith.
+- [x] Restaurar o feedback visual instantâneo "Consultando..." em background no webhook do WhatsApp.
 
 ---
 
@@ -109,4 +112,4 @@ Agente usado: Claude Opus 4.6
 | Jun 2026 | Gemini | Reversão da funcionalidade de indicador "digitando" no WhatsApp. A API da Meta não suporta esta ação, causando erros. O código foi limpo para remover a complexidade desnecessária. |
 | Jun 2026 | Gemini | Correção de bug no webhook do WhatsApp (KeyError por conta do RealDictCursor). Mapeamento das inconsistências de roteamento, datas e volatilidade do histórico no arquivo DEBITOS_TECNICOS.md. |
 | Jun 2026 | Gemini | Integração do LangSmith para observabilidade de chamadas da OpenAI utilizando o decorador @traceable nos módulos de agente e pipelines de ingestão. |
-| Jun 2026 | Claude Opus 4.6 | Implementação do LangGraph como motor de orquestração: grafo com 6 nós (extração silenciosa, classificação de intenção, RAG, checklist completo, resposta a pendência, cobrança conversacional). Refatoração do `checklist.py` para dados parciais. Simplificação do webhook. Criação da KB Denver ESDM em `core/kb/`. |
+| Jun 2026 | Claude Opus 4.6 / Gemini | Implementação do LangGraph como motor de orquestração (6 nós, MemorySaver, PROMPT B4, dados parciais, simplificação do webhook, KB Denver). Resolução de KeyError no roteador, reintrodução de feedback "Consultando..." e integração de traces detalhados de LLM via wrap_openai. |
