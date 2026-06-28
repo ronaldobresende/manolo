@@ -18,7 +18,7 @@ Agente usado: Claude Opus 4.6
 ☑ Fase 1 — Local, terminal (Concluída)
 ☑ Fase 2 — Nuvem (Concluída — Neon + Cloudflare R2 + Render)
 ☑ Fase 3 — WhatsApp + LangGraph (Em andamento)
-☐ Fase 4 — Web App
+☑ Fase 4 — Web App (MVP e Autenticação Concluídos)
 
 ---
 
@@ -60,6 +60,16 @@ Agente usado: Claude Opus 4.6
 - [x] Corrigir KeyError no roteamento condicional de arestas do LangGraph em `agent.py`.
 - [x] Envelopar o cliente OpenAI compartilhado (`clients.py`) com `wrap_openai` para ativar traces finos da LLM no LangSmith.
 - [x] Restaurar o feedback visual instantâneo "Consultando..." em background no webhook do WhatsApp.
+
+**Fase 4 (Web App):**
+- [x] Estruturação do Next.js (App Router), Tailwind CSS e TypeScript em `web/`.
+- [x] Criação de layout responsivo com Sidebar e Header.
+- [x] Criação do Dashboard (Perfil Vivo, Marcos Recentes).
+- [x] Gráficos de evolução (Sono, Humor, Comunicação, Brincar) usando Recharts.
+- [x] Visualização detalhada e tabulada dos Checklists Diários.
+- [x] Tela de Documentos com suporte a upload de PDFs via FastAPI para R2.
+- [x] Implementação da API REST (Backend FastAPI) `channels/api.py`.
+- [x] **Fase 4.1 (Segurança):** Implementação de JWT via cookies (`middleware.ts`, `app/actions.ts` e `core/security.py`), scripts de senha e validação de sessão protegendo `/dashboard/*`.
 
 ---
 
@@ -115,3 +125,4 @@ Agente usado: Claude Opus 4.6
 | Jun 2026 | Gemini | Integração do LangSmith para observabilidade de chamadas da OpenAI utilizando o decorador @traceable nos módulos de agente e pipelines de ingestão. |
 | Jun 2026 | Claude Opus 4.6 / Gemini | Implementação do LangGraph como motor de orquestração (6 nós, MemorySaver, PROMPT B4, dados parciais, simplificação do webhook, KB Denver). Resolução de KeyError no roteador, reintrodução de feedback "Consultando..." e integração de traces detalhados de LLM via wrap_openai. |
 | Jun 2026 | Gemini 3.1 Pro | Refatoração completa da extração (Structured Outputs via Pydantic), mapeamento direto em colunas SQL, conversão de datas (BR), **empatia orgânica**, e **guardrails de escopo e clínico**. \n\n**Atualização Crítica de Arquitetura (Amnésia de Data):** Refatoração do Schema para suportar extração de múltiplos dias em uma única mensagem (`List[RelatoDiario]`). Implementada ancoragem de contexto temporal (`data_contexto` na state do LangGraph), bloqueio de alucinação no RAG (separação estrita de Perfil Vivo e Eventos Diários), confirmação leve para datas implícitas/ambíguas, cálculo de dias da semana (ex: 'quarta passada') por LLM, e função SQL `mesclar_checklists` para Correção Retroativa de Datas (Ctrl+Z invisível). |
+| Jun 2026 | Gemini 3.1 Pro | Implementação da **Fase 4 e 4.1 (Web App e Autenticação)**. Criação completa do frontend Next.js com dashboards e gráficos (Recharts). Backend estendido com rotas REST e sistema de segurança (JWT com bcrypt), Server Actions no frontend e Next.js Middleware para roteamento privado. |

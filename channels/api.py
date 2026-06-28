@@ -14,6 +14,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query, Depends
 from pydantic import BaseModel
 
+from channels.schemas import ChecklistPayload
+
 from core.database import get_connection, _query_one, _query_many, _execute
 from core.config import settings
 from core.security import get_current_user
@@ -200,6 +202,128 @@ async def obter_checklist_detalhado(crianca_id: str, data: str):
         secoes[nome] = dict(row) if row else None
 
     return {**dict(checklist), "secoes": secoes}
+
+
+@api_router.post("/checklists/{crianca_id}")
+async def criar_checklist(
+    crianca_id: str, 
+    payload: ChecklistPayload,
+    user: dict = Depends(get_current_user)
+):
+    """Cria um checklist novo."""
+    # Verificar se já existe (não deve duplicar)
+    existente = _query_one(
+        "SELECT id FROM checklists WHERE crianca_id = %s AND data = %s",
+        (crianca_id, payload.data)
+    )
+    if existente:
+        raise HTTPException(status_code=400, detail="Checklist para esta data já existe. Use PATCH para atualizar.")
+
+    # Inserir checklist principal
+    checklist_id = _execute_returning(
+        """
+        INSERT INTO checklists (crianca_id, usuario_id, data, resumo_dia, origem)
+        VALUES (%s, %s, %s, %s, 'web')
+        RETURNING id
+        """,
+        (crianca_id, user["id"], payload.data, payload.resumo_dia)
+    )["id"]
+
+    # Função auxiliar para inserir seções se enviadas
+    def inserir_secao(tabela: str, obj):
+        if not obj: return
+        dados = obj.model_dump(exclude_unset=True)
+        if not dados: return
+        
+        colunas = ["checklist_id"] + list(dados.keys())
+        valores = [checklist_id] + list(dados.values())
+        
+        placeholders = ", ".join(["%s"] * len(colunas))
+        cols_str = ", ".join(colunas)
+        
+        _execute(f"INSERT INTO {tabela} ({cols_str}) VALUES ({placeholders})", tuple(valores))
+
+    inserir_secao("checklist_sono", payload.sono)
+    inserir_secao("checklist_tela", payload.tela)
+    inserir_secao("checklist_alimentacao", payload.alimentacao)
+    inserir_secao("checklist_comunicacao", payload.comunicacao)
+    inserir_secao("checklist_brincar", payload.brincar)
+    inserir_secao("checklist_higiene", payload.higiene)
+    inserir_secao("checklist_vestuario", payload.vestuario)
+    inserir_secao("checklist_movimento", payload.movimento)
+    inserir_secao("checklist_humor", payload.humor)
+    inserir_secao("checklist_rotina", payload.rotina)
+    inserir_secao("checklist_observacoes", payload.observacoes)
+
+    # Dispara a atualização do perfil em background (sem bloquear o response)
+    from agent.profile import atualizar_perfil
+    asyncio.create_task(asyncio.to_thread(atualizar_perfil, crianca_id))
+
+    return {"status": "success", "id": checklist_id}
+
+
+@api_router.patch("/checklists/{crianca_id}/{data}")
+async def atualizar_checklist(
+    crianca_id: str,
+    data: str,
+    payload: ChecklistPayload,
+    user: dict = Depends(get_current_user)
+):
+    """Atualiza um checklist existente (merge/upsert)."""
+    checklist = _query_one(
+        "SELECT id FROM checklists WHERE crianca_id = %s AND data = %s",
+        (crianca_id, data)
+    )
+    if not checklist:
+        raise HTTPException(status_code=404, detail="Checklist não encontrado para atualizar.")
+
+    checklist_id = checklist["id"]
+
+    # Atualiza cabeçalho (apenas se fornecido e não None)
+    if payload.resumo_dia is not None:
+        _execute(
+            "UPDATE checklists SET resumo_dia = %s WHERE id = %s",
+            (payload.resumo_dia, checklist_id)
+        )
+
+    # Upsert seções
+    def upsert_secao(tabela: str, obj):
+        if not obj: return
+        # exclude_unset garante que pegamos apenas os campos que vieram no body
+        dados = {k: v for k, v in obj.model_dump(exclude_unset=True).items() if v is not None}
+        if not dados: return
+        
+        # Testa se existe
+        existe = _query_one(f"SELECT checklist_id FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
+        if existe:
+            set_clause = ", ".join([f"{k} = %s" for k in dados.keys()])
+            _execute(f"UPDATE {tabela} SET {set_clause} WHERE checklist_id = %s", tuple(list(dados.values()) + [checklist_id]))
+        else:
+            colunas = ["checklist_id"] + list(dados.keys())
+            valores = [checklist_id] + list(dados.values())
+            placeholders = ", ".join(["%s"] * len(colunas))
+            cols_str = ", ".join(colunas)
+            _execute(f"INSERT INTO {tabela} ({cols_str}) VALUES ({placeholders})", tuple(valores))
+
+    upsert_secao("checklist_sono", payload.sono)
+    upsert_secao("checklist_tela", payload.tela)
+    upsert_secao("checklist_alimentacao", payload.alimentacao)
+    upsert_secao("checklist_comunicacao", payload.comunicacao)
+    upsert_secao("checklist_brincar", payload.brincar)
+    upsert_secao("checklist_higiene", payload.higiene)
+    upsert_secao("checklist_vestuario", payload.vestuario)
+    upsert_secao("checklist_movimento", payload.movimento)
+    upsert_secao("checklist_humor", payload.humor)
+    upsert_secao("checklist_rotina", payload.rotina)
+    upsert_secao("checklist_observacoes", payload.observacoes)
+
+    # Dispara a atualização do perfil em background
+    from agent.profile import atualizar_perfil
+    asyncio.create_task(asyncio.to_thread(atualizar_perfil, crianca_id))
+
+    return {"status": "success", "id": checklist_id}
+
+
 
 
 # ============================================================
