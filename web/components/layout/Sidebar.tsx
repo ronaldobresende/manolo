@@ -59,8 +59,17 @@ export function Sidebar({ criancaNome = 'Bernardo' }: SidebarProps) {
 
       {/* Rodapé */}
       <div className="px-5 py-4 border-t border-neutral-border">
-        <p className="text-xs text-manolo-muted">Fase 4 · MVP</p>
-        <p className="text-xs text-manolo-muted">Sem autenticação ativa</p>
+        <button 
+          onClick={async () => {
+            const { actionLogout } = await import('@/app/actions')
+            await actionLogout()
+            window.location.href = '/login'
+          }}
+          className="text-xs text-manolo-muted hover:text-manolo-danger transition-colors font-medium flex items-center gap-2"
+        >
+          <IconX className="w-3 h-3" />
+          Sair da conta
+        </button>
       </div>
     </div>
   )

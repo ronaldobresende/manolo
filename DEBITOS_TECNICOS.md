@@ -30,20 +30,9 @@ Este documento registra as inconsistências de comportamento e problemas arquite
 
 ---
 
-## 5. Web App sem Autenticação (Fase 4 MVP) — [PENDENTE]
+## 5. Web App sem Autenticação (Fase 4 MVP) — [RESOLVIDO]
 
-* **O Problema:** O Web App (Fase 4) está em produção **sem autenticação**. Todas as rotas `/api/*` são públicas. Qualquer pessoa com a URL do Render consegue acessar os dados.
-* **Escopo:** Aceitável no MVP porque o app é de uso pessoal do admin, a URL do Render não é divulgada, e os dados são de teste controlado.
-* **Solução (Fase 4.1):**
-  - `POST /api/auth/login` → email + senha → JWT (python-jose, bcrypt)
-  - JWT em cookie `httpOnly` via Next.js Server Action
-  - Middleware Next.js: verificar cookie em `/dashboard/*` → redirect para `/login`
-  - Renovação automática 30min antes de expirar (TTL: 8 horas)
-  - Adicionar coluna `email_web` + `senha_hash` à tabela `usuarios` (migration já criada em `scripts/migrate_web.sql`)
-  - `JWT_SECRET_KEY` no Render (variável de ambiente gerada via `python -c "import secrets; print(secrets.token_hex(32))"`)
-* **Arquivos preparados:**
-  - `web/lib/auth.ts` — stub com TODO detalhado
-  - `core/config.py` — `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `JWT_EXPIRE_HOURS` já declarados
-  - `requirements.txt` — `python-jose[cryptography]` e `bcrypt` já adicionados
+* **O Problema:** O Web App (Fase 4) estava em produção sem autenticação, com rotas `/api/*` públicas.
+* **Resolução:** Resolvido na Fase 4.1. Foi implementada autenticação JWT com `python-jose` e `bcrypt` no backend. O frontend (Next.js) utiliza Server Actions para gerenciar cookies de sessão e Middleware para proteger as rotas `/dashboard/*`. O token JWT é armazenado de forma que o client-side consiga injetá-lo no header `Authorization` nas chamadas para a API no Render.
 
 

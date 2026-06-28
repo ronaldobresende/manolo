@@ -38,7 +38,10 @@ app.add_middleware(
 )
 
 # Montar rotas da API web
+from channels.auth import auth_router  # noqa: E402
 from channels.api import api_router  # noqa: E402
+
+app.include_router(auth_router)
 app.include_router(api_router)
 
 

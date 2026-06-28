@@ -11,15 +11,17 @@ import tempfile
 import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query, Depends
 from pydantic import BaseModel
 
 from core.database import get_connection
 from core.config import settings
+from core.security import get_current_user
 
 logger = logging.getLogger(__name__)
 
-api_router = APIRouter(prefix="/api", tags=["web"])
+# Aplicar proteção a todas as rotas deste router
+api_router = APIRouter(prefix="/api", tags=["web"], dependencies=[Depends(get_current_user)])
 
 
 # ============================================================

@@ -32,14 +32,32 @@ export class ApiError extends Error {
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`
 
+  // Lê o token do cookie (funciona apenas no client-side, se httpOnly for false)
+  let token = ''
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/(^| )manolo_token=([^;]+)/)
+    if (match) token = match[2]
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...options?.headers as Record<string, string>,
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      // TODO Fase 4.1: adicionar Authorization: Bearer {token} aqui
-      ...options?.headers,
-    },
+    headers,
     ...options,
   })
+
+  if (res.status === 401 && typeof window !== 'undefined') {
+    // Redireciona para o login em caso de token inválido ou expirado
+    window.location.href = '/login'
+    throw new ApiError(401, 'Sessão expirada')
+  }
 
   if (!res.ok) {
     const detail = await res.json().catch(() => ({ detail: res.statusText }))

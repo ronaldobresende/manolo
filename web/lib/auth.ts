@@ -1,9 +1,7 @@
 /**
- * Auth helpers — STUB para Fase 4.1.
- * Autenticação desabilitada no MVP (Fase 4).
- * Quando implementada: JWT armazenado em cookie httpOnly.
- *
- * DÉBITO TÉCNICO — ver DEBITOS_TECNICOS.md
+ * Auth helpers — Fase 4.1.
+ * O gerenciamento do JWT (login e logout) está em app/actions.ts via Server Actions.
+ * O Middleware (middleware.ts) protege as rotas.
  */
 
 /** Criança selecionada atualmente — default = Bernardo (piloto) */
@@ -29,11 +27,3 @@ export function setCriancaSelecionada(criancaId: string): void {
   }
 }
 
-// ============================================================
-// TODO Fase 4.1 — Implementar:
-// - POST /api/auth/login → JWT
-// - Armazenar token em cookie httpOnly via Server Action
-// - Middleware Next.js: verificar cookie em /dashboard/*
-// - Renovação automática 30min antes de expirar (8h total)
-// - Logout: invalidar cookie server-side
-// ============================================================
