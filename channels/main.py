@@ -32,6 +32,7 @@ _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
+    allow_origin_regex=r"https://.*",  # Permite qualquer origem HTTPS (útil para Vercel Preview URLs)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
