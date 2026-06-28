@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { getChecklists, getChecklistDetalhado } from '@/lib/api'
 import { getCriancaSelecionada } from '@/lib/auth'
@@ -39,6 +40,7 @@ function ModalChecklist({ data, criancaId, onClose }: {
   criancaId: string
   onClose: () => void
 }) {
+  const router = useRouter()
   const [detalhe, setDetalhe] = useState<ChecklistDetalhado | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -86,7 +88,15 @@ function ModalChecklist({ data, criancaId, onClose }: {
               </span>
             )}
           </div>
-          <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => router.push(`/dashboard/checklists/novo?data=${data}`)}
+              className="btn-secondary text-sm py-1.5 px-3"
+            >
+              ✎ Editar
+            </button>
+            <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
+          </div>
         </div>
 
         {/* Corpo do modal */}
@@ -172,6 +182,7 @@ function ModalChecklist({ data, criancaId, onClose }: {
 // ============================================================
 
 export default function ChecklistsPage() {
+  const router = useRouter()
   const [checklists, setChecklists] = useState<ChecklistResumo[]>([])
   const [total, setTotal] = useState(0)
   const [pagina, setPagina] = useState(1)
@@ -195,7 +206,16 @@ export default function ChecklistsPage() {
     <>
       <Header titulo="Checklists" subtitulo={`${total} registros encontrados`} />
 
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 space-y-4">
+        <div className="flex justify-end">
+          <button 
+            onClick={() => router.push('/dashboard/checklists/novo')}
+            className="btn-primary text-sm py-2 px-4 shadow-sm hover:-translate-y-0.5 transition-transform"
+          >
+            + Novo Checklist
+          </button>
+        </div>
+
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-primary-50">

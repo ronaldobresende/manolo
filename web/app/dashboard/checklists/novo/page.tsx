@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { getCriancaSelecionada } from '@/lib/auth'
 import { apiFetch } from '@/lib/api'
 import { TagInput } from '@/components/ui/TagInput'
@@ -57,10 +57,20 @@ function SectionCard({ title, icon: Icon, isPartial, children }: any) {
 }
 
 export default function ChecklistNovoPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-manolo-muted">Carregando formulário...</div>}>
+      <ChecklistNovoContent />
+    </Suspense>
+  )
+}
+
+function ChecklistNovoContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlDate = searchParams.get('data')
   const criancaId = getCriancaSelecionada()
   
-  const [form, setForm] = useState(DEFAULT_STATE)
+  const [form, setForm] = useState({ ...DEFAULT_STATE, data: urlDate || DEFAULT_STATE.data })
   const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error'>('idle')
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadedSections, setLoadedSections] = useState<string[]>([])
