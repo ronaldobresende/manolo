@@ -309,11 +309,29 @@ def processar_checklist_completo(state: ManoloState) -> dict:
     else:
         periodo_texto = f"o dia {data_formatada}"
 
-    if campos_salvos:
-        campos_str = ", ".join(campos_salvos)
-        resposta = f"Anotei as informações sobre {campos_str} para {periodo_texto}. ✅"
-    else:
-        resposta = f"Obrigado pelo relato, {nome_usuario}! Registrei as informações para {periodo_texto}. ✅"
+    client = get_openai_client()
+    prompt_empatia = f"""A mãe acabou de enviar um relato livre sobre a rotina da criança:
+"{mensagem}"
+Os dados já foram extraídos e salvos no sistema (referentes a {periodo_texto}).
+Gere uma resposta curta (1 a 2 parágrafos no máximo), muito acolhedora e empática sobre o que ela relatou.
+Se houver indícios de sentimentos, dificuldades ou conquistas da criança, valide isso com empatia.
+Finalize a mensagem confirmando que você registrou as informações para {periodo_texto} com um emoji.
+Use um tom caloroso, prestativo e natural. NÃO faça perguntas, pois o sistema fará a cobrança em seguida se necessário."""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "system", "content": prompt_empatia}],
+            temperature=0.7,
+        )
+        resposta = response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"[CHECKLIST COMPLETO] Erro na geração empática: {e}")
+        if campos_salvos:
+            campos_str = ", ".join(campos_salvos)
+            resposta = f"Anotei as informações sobre {campos_str} para {periodo_texto}. ✅"
+        else:
+            resposta = f"Obrigado pelo relato, {nome_usuario}! Registrei as informações para {periodo_texto}. ✅"
 
     return {"resposta": resposta}
 
