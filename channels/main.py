@@ -177,7 +177,9 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
                 return Response(status_code=200)
 
             logger.info(f"Mensagem de texto recebida de {nome_usuario}: {texto}")
+            background_tasks.add_task(enviar_mensagem_async, "Consultando...", telefone_remetente)
             background_tasks.add_task(processar_e_responder, texto, telefone_remetente, usuario_id, nome_usuario, perfil_usuario)
+
 
         elif tipo == "audio":
             media_id = mensagem.get("audio", {}).get("id")
