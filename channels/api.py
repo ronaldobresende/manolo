@@ -261,13 +261,21 @@ async def criar_checklist(
         VALUES (%s, %s, %s, %s, 'web')
         RETURNING id
         """,
-        (crianca_id, user["id"], payload.data, payload.resumo_dia)
+        (crianca_id, user["id"], payload.data, payload.resumo_dia if payload.resumo_dia != "" else None)
     )["id"]
 
     # Função auxiliar para inserir seções se enviadas
     def inserir_secao(tabela: str, obj):
         if not obj: return
-        dados = obj.model_dump(exclude_unset=True)
+        raw_dados = obj.model_dump(exclude_unset=True)
+        if not raw_dados: return
+        
+        dados = {}
+        for k, v in raw_dados.items():
+            if v is None: continue
+            if isinstance(v, str) and v == "": v = None
+            dados[k] = v
+            
         if not dados: return
         
         colunas = ["checklist_id"] + list(dados.keys())
@@ -318,14 +326,21 @@ async def atualizar_checklist(
     if payload.resumo_dia is not None:
         _execute(
             "UPDATE checklists SET resumo_dia = %s WHERE id = %s",
-            (payload.resumo_dia, checklist_id)
+            (payload.resumo_dia if payload.resumo_dia != "" else None, checklist_id)
         )
 
     # Upsert seções
     def upsert_secao(tabela: str, obj):
         if not obj: return
-        # exclude_unset garante que pegamos apenas os campos que vieram no body
-        dados = {k: v for k, v in obj.model_dump(exclude_unset=True).items() if v is not None}
+        raw_dados = obj.model_dump(exclude_unset=True)
+        if not raw_dados: return
+        
+        dados = {}
+        for k, v in raw_dados.items():
+            if v is None: continue
+            if isinstance(v, str) and v == "": v = None
+            dados[k] = v
+            
         if not dados: return
         
         # Testa se existe
