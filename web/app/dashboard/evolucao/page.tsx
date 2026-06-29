@@ -247,7 +247,7 @@ export default function EvolucaoPage() {
           <Grafico
             dados={dadosSono}
             linhas={[
-              { dataKey: 'Dormiu às', nome: 'Dormiu às', cor: '#52B788' },
+              { dataKey: 'Dormiu às', nome: 'Dormiu às', cor: '#E63946' },
             ]}
             metaLinha={{ y: 20.5, label: "Meta (20:30)", stroke: "#2D6A4F" }}
             yDomain={[19.0, 'auto']}
