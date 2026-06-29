@@ -259,6 +259,10 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
     prompt_usuario = (
         f"Contexto de documentos e laudos históricos:\n{contexto_docs}\n\n"
         f"Últimos registros diários (Checklists):\n{contexto_checklists}\n\n"
+        f"REGRA ANTI-ALUCINAÇÃO: Se os registros diários acima estiverem vazios ou não contiverem"
+        f" informações sobre o período específico perguntado, informe que não há registros para"
+        f" esse período. NÃO use as preferências gerais do Perfil Vivo como substituto de eventos"
+        f" reais. NÃO invente ou assuma que algo aconteceu.\n\n"
         f"Pergunta do usuário: {mensagem}"
     )
 
@@ -281,13 +285,30 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
 def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     """
     NÓ 4 — Relatório do Checklist sob demanda.
+    Extrai a data da mensagem do usuário (se fornecida) antes de consultar o banco.
     """
+    import re
     crianca_id = state["crianca_id"]
-    data_contexto = state.get("data_contexto") or _obter_data_hoje()
-    
-    # Busca e formata o resumo pelo checklist.py
-    resumo_formatado = formatar_resumo_diario(crianca_id, data_contexto)
-    
+    mensagem = state["mensagem"]
+
+    # Tenta extrair data ISO (YYYY-MM-DD) diretamente da mensagem
+    data_alvo = None
+    match_iso = re.search(r'(\d{4}-\d{2}-\d{2})', mensagem)
+    if match_iso:
+        data_alvo = match_iso.group(1)
+    else:
+        # Tenta formato brasileiro DD/MM/YYYY
+        match_br = re.search(r'(\d{2})/(\d{2})/(\d{4})', mensagem)
+        if match_br:
+            data_alvo = f"{match_br.group(3)}-{match_br.group(2)}-{match_br.group(1)}"
+
+    # Fallback: usa data_contexto do state ou hoje
+    if not data_alvo:
+        data_alvo = state.get("data_contexto") or _obter_data_hoje()
+
+    logger.info(f"[RELATÓRIO] Gerando checklist para data: {data_alvo}")
+    resumo_formatado = formatar_resumo_diario(crianca_id, data_alvo)
+
     return {"resposta": resumo_formatado}
 
 
