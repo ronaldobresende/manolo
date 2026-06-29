@@ -611,7 +611,7 @@ class ChatRequest(BaseModel):
 
 
 @api_router.post("/chat")
-async def chat_com_agente(body: ChatRequest):
+async def chat_com_agente(body: ChatRequest, current_user: dict = Depends(get_current_user)):
     """
     Envia mensagem ao agente LangGraph e retorna a resposta.
     O session_id funciona como thread_id do MemorySaver — mantém histórico da sessão.
@@ -623,9 +623,9 @@ async def chat_com_agente(body: ChatRequest):
             executar_grafo,
             mensagem=body.mensagem,
             telefone=body.session_id,  # thread_id do LangGraph
-            usuario_id=settings.USUARIO_ID_PILOTO,
-            nome_usuario="Admin Web",
-            perfil_usuario="admin",
+            usuario_id=current_user["id"],
+            nome_usuario=current_user["nome"],
+            perfil_usuario=current_user["perfil"],
             crianca_id=body.crianca_id,
         )
         return {"resposta": resposta, "session_id": body.session_id}

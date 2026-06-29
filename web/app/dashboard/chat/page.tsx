@@ -91,8 +91,8 @@ export default function ChatPage() {
           {mensagens.length === 0 && (
             <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
               <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-4">
-                  <span className="text-white text-2xl font-bold">M</span>
+                <div className="w-16 h-16 mx-auto mb-4">
+                  <img src="/logo.png" alt="Manolo" className="w-full h-full object-contain" />
                 </div>
                 <h2 className="text-xl font-semibold text-manolo-text">Olá! Sou o Manolo.</h2>
                 <p className="text-manolo-muted mt-2 text-sm leading-relaxed">
