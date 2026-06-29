@@ -134,11 +134,7 @@ def salvar_campo_individual(checklist_id: str, campo: str, dados: dict):
 def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
     """Lógica unificada para inserir ou atualizar campos tipados do Pydantic no banco."""
     
-    # Utilitário para limpar quebras de linha indesejadas no notas
-    def _clean_notas(old, new):
-        if old and old.strip():
-            return old + '\n' + (new or '')
-        return new or None
+    # Utilitário removido pois não vamos mais concatenar notas (DO NOTHING puro)
 
     # SONO
     if "sono" in campos and campos["sono"]:
@@ -146,15 +142,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_sono (checklist_id, dormiu_as, acordou_as, acordou_noite, cochilo, notas)
             VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            dormiu_as = COALESCE(EXCLUDED.dormiu_as, checklist_sono.dormiu_as),
-            acordou_as = COALESCE(EXCLUDED.acordou_as, checklist_sono.acordou_as),
-            acordou_noite = COALESCE(EXCLUDED.acordou_noite, checklist_sono.acordou_noite),
-            cochilo = COALESCE(EXCLUDED.cochilo, checklist_sono.cochilo),
-            notas = CASE 
-                WHEN checklist_sono.notas IS NOT NULL AND checklist_sono.notas != '' AND EXCLUDED.notas IS NOT NULL THEN checklist_sono.notas || E'\n' || EXCLUDED.notas
-                ELSE COALESCE(EXCLUDED.notas, checklist_sono.notas)
-            END
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, s.get('dormiu_as'), s.get('acordou_as'), s.get('acordou_noite'), s.get('cochilo'), s.get('notas')))
 
     # TELA
@@ -163,11 +151,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_tela (checklist_id, usou_tela, tempo_minutos, conteudo, reacao_retirada)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            usou_tela = COALESCE(EXCLUDED.usou_tela, checklist_tela.usou_tela),
-            tempo_minutos = COALESCE(EXCLUDED.tempo_minutos, checklist_tela.tempo_minutos),
-            conteudo = COALESCE(EXCLUDED.conteudo, checklist_tela.conteudo),
-            reacao_retirada = COALESCE(EXCLUDED.reacao_retirada, checklist_tela.reacao_retirada)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, t.get('usou_tela'), t.get('tempo_minutos'), t.get('conteudo'), t.get('reacao_retirada')))
 
     # ALIMENTACAO
@@ -176,12 +160,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_alimentacao (checklist_id, comeu_bem, aceitou, recusou, comeu_sentado, utensilio)
             VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            comeu_bem = COALESCE(EXCLUDED.comeu_bem, checklist_alimentacao.comeu_bem),
-            aceitou = EXCLUDED.aceitou,
-            recusou = EXCLUDED.recusou,
-            comeu_sentado = COALESCE(EXCLUDED.comeu_sentado, checklist_alimentacao.comeu_sentado),
-            utensilio = COALESCE(EXCLUDED.utensilio, checklist_alimentacao.utensilio)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, a.get('comeu_bem'), a.get('aceitou'), a.get('recusou'), a.get('comeu_sentado'), a.get('utensilio')))
 
     # COMUNICACAO
@@ -190,13 +169,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_comunicacao (checklist_id, usou_gestos, palavras_ditas, apontou, puxou_mao, respondeu_nome, imitou)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            usou_gestos = COALESCE(EXCLUDED.usou_gestos, checklist_comunicacao.usou_gestos),
-            palavras_ditas = EXCLUDED.palavras_ditas,
-            apontou = COALESCE(EXCLUDED.apontou, checklist_comunicacao.apontou),
-            puxou_mao = COALESCE(EXCLUDED.puxou_mao, checklist_comunicacao.puxou_mao),
-            respondeu_nome = COALESCE(EXCLUDED.respondeu_nome, checklist_comunicacao.respondeu_nome),
-            imitou = COALESCE(EXCLUDED.imitou, checklist_comunicacao.imitou)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, c.get('usou_gestos'), c.get('palavras_ditas'), c.get('apontou'), c.get('puxou_mao'), c.get('respondeu_nome'), c.get('imitou')))
 
     # BRINCAR
@@ -205,11 +178,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_brincar (checklist_id, com_que_brincou, modo, fez_faz_de_conta, tempo_sem_tela_minutos)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            com_que_brincou = EXCLUDED.com_que_brincou,
-            modo = COALESCE(EXCLUDED.modo, checklist_brincar.modo),
-            fez_faz_de_conta = COALESCE(EXCLUDED.fez_faz_de_conta, checklist_brincar.fez_faz_de_conta),
-            tempo_sem_tela_minutos = COALESCE(EXCLUDED.tempo_sem_tela_minutos, checklist_brincar.tempo_sem_tela_minutos)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, b.get('com_que_brincou'), b.get('modo'), b.get('fez_faz_de_conta'), b.get('tempo_sem_tela_minutos')))
 
     # HIGIENE
@@ -218,10 +187,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_higiene (checklist_id, banho, escovou_dentes, sinalizou_banheiro)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            banho = COALESCE(EXCLUDED.banho, checklist_higiene.banho),
-            escovou_dentes = COALESCE(EXCLUDED.escovou_dentes, checklist_higiene.escovou_dentes),
-            sinalizou_banheiro = COALESCE(EXCLUDED.sinalizou_banheiro, checklist_higiene.sinalizou_banheiro)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, h.get('banho'), h.get('escovou_dentes'), h.get('sinalizou_banheiro')))
 
     # VESTUARIO
@@ -230,9 +196,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_vestuario (checklist_id, colaborou_roupa, incomodo_sensorial)
             VALUES (%s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            colaborou_roupa = COALESCE(EXCLUDED.colaborou_roupa, checklist_vestuario.colaborou_roupa),
-            incomodo_sensorial = COALESCE(EXCLUDED.incomodo_sensorial, checklist_vestuario.incomodo_sensorial)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, v.get('colaborou_roupa'), v.get('incomodo_sensorial')))
 
     # MOVIMENTO
@@ -241,10 +205,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_movimento (checklist_id, atividades, caiu_muito, buscou_colo)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            atividades = EXCLUDED.atividades,
-            caiu_muito = COALESCE(EXCLUDED.caiu_muito, checklist_movimento.caiu_muito),
-            buscou_colo = COALESCE(EXCLUDED.buscou_colo, checklist_movimento.buscou_colo)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, m.get('atividades'), m.get('caiu_muito'), m.get('buscou_colo')))
 
     # HUMOR
@@ -253,14 +214,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_humor (checklist_id, humor_geral, teve_crise, o_que_acalmou, notas)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            humor_geral = COALESCE(EXCLUDED.humor_geral, checklist_humor.humor_geral),
-            teve_crise = COALESCE(EXCLUDED.teve_crise, checklist_humor.teve_crise),
-            o_que_acalmou = COALESCE(EXCLUDED.o_que_acalmou, checklist_humor.o_que_acalmou),
-            notas = CASE 
-                WHEN checklist_humor.notas IS NOT NULL AND checklist_humor.notas != '' AND EXCLUDED.notas IS NOT NULL THEN checklist_humor.notas || E'\n' || EXCLUDED.notas
-                ELSE COALESCE(EXCLUDED.notas, checklist_humor.notas)
-            END
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, h.get('humor_geral'), h.get('teve_crise'), h.get('o_que_acalmou'), h.get('notas')))
 
     # ROTINA
@@ -269,10 +223,7 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_rotina (checklist_id, guardou_brinquedos, ajudou_tarefa, aceitou_transicao)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET 
-            guardou_brinquedos = COALESCE(EXCLUDED.guardou_brinquedos, checklist_rotina.guardou_brinquedos),
-            ajudou_tarefa = COALESCE(EXCLUDED.ajudou_tarefa, checklist_rotina.ajudou_tarefa),
-            aceitou_transicao = COALESCE(EXCLUDED.aceitou_transicao, checklist_rotina.aceitou_transicao)
+            ON CONFLICT (checklist_id) DO NOTHING
         """, (checklist_id, r.get('guardou_brinquedos'), r.get('ajudou_tarefa'), r.get('aceitou_transicao')))
 
 
@@ -413,3 +364,56 @@ def obter_checklist_id_do_dia(crianca_id: str, data_ref: str = None) -> str | No
     except Exception as e:
         logger.error(f"Erro ao obter checklist_id do dia: {e}")
         return None
+
+
+def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
+    """Busca o checklist da data no banco e gera a string formatada com emojis."""
+    from psycopg2.extras import RealDictCursor
+    from datetime import datetime
+    
+    try:
+        data_fmt = datetime.strptime(data_ref, "%Y-%m-%d").strftime("%d/%m/%Y")
+    except:
+        data_fmt = data_ref
+
+    resumo = f"📋 Checklist — {data_fmt}\n\n"
+    
+    try:
+        with get_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT id FROM checklists WHERE crianca_id = %s AND data = %s", (crianca_id, data_ref))
+                row = cur.fetchone()
+                
+                if not row:
+                    return resumo + "Ainda não há nenhum registro para este dia. Pode me contar como foi!\n\nComplete no app: https://app.manolo.com"
+                
+                checklist_id = row['id']
+                
+                # Campos na ordem pedida
+                campos = [
+                    ("sono", "checklist_sono", "Sono", lambda r: f"dormiu às {r.get('dormiu_as') or '?'}, acordou às {r.get('acordou_as') or '?'}"),
+                    ("alimentacao", "checklist_alimentacao", "Alimentação", lambda r: "comeu bem" if r.get("comeu_bem") else "não comeu bem"),
+                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {r.get('tempo_minutos')} min" if r.get('usou_tela') else "não usou"),
+                    ("comunicacao", "checklist_comunicacao", "Comunicação", lambda r: "se comunicou" if r.get('usou_gestos') or r.get('palavras_ditas') else "registrado"),
+                    ("brincar", "checklist_brincar", "Brincar", lambda r: f"brincou com {r.get('com_que_brincou') or 'algo'}"),
+                    ("humor", "checklist_humor", "Humor", lambda r: r.get('humor_geral') or "registrado"),
+                    ("higiene", "checklist_higiene", "Higiene", lambda r: "registrado"),
+                    ("movimento", "checklist_movimento", "Movimento", lambda r: "registrado"),
+                    ("rotina", "checklist_rotina", "Rotina", lambda r: "registrado"),
+                ]
+                
+                for key, tabela, nome, formatador in campos:
+                    cur.execute(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
+                    dados = cur.fetchone()
+                    if dados:
+                        desc = formatador(dados)
+                        resumo += f"✅ {nome}: {desc}\n"
+                    else:
+                        resumo += f"⬜ {nome}: não registrado\n"
+                        
+    except Exception as e:
+        logger.error(f"Erro ao formatar resumo: {e}")
+        return f"Não consegui buscar o relatório de {data_fmt}."
+        
+    resumo += "\nComplete o que faltou no app: https://app.manolo.com"
+    return resumo
