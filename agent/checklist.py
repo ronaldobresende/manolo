@@ -387,20 +387,82 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
                 if not row:
                     return resumo + "Ainda não há nenhum registro para este dia. Pode me contar como foi!\n\nComplete no app: https://app.manolo.com"
                 
-                checklist_id = row['id']
+                def format_time(t):
+                    if not t: return '?'
+                    if hasattr(t, 'strftime'): return t.strftime('%H:%M')
+                    return str(t)[:5]
                 
+                def format_list(l):
+                    if not l: return ''
+                    if isinstance(l, list): return ', '.join(l)
+                    return str(l)
+                    
+                def format_duration(m):
+                    if not m: return '0m'
+                    h = m // 60
+                    mins = m % 60
+                    if h == 0: return f"{mins}m"
+                    return f"{h}h{str(mins).zfill(2)}m"
+
+                # Funções de formatação mais detalhadas
+                def formata_alimentacao(r):
+                    partes = []
+                    partes.append("comeu bem" if r.get('comeu_bem') else "não comeu tão bem")
+                    if r.get('aceitou'): partes.append(f"aceitou: {format_list(r.get('aceitou'))}")
+                    if r.get('recusou'): partes.append(f"recusou: {format_list(r.get('recusou'))}")
+                    if r.get('utensilio'): partes.append(f"usou {r.get('utensilio')}")
+                    return " | ".join(partes)
+
+                def formata_comunicacao(r):
+                    partes = []
+                    if r.get('palavras_ditas'): partes.append(f"falou: {format_list(r.get('palavras_ditas'))}")
+                    if r.get('usou_gestos'): partes.append("usou gestos")
+                    if r.get('apontou'): partes.append("apontou")
+                    if r.get('imitou'): partes.append("imitou")
+                    return " | ".join(partes) if partes else "sem detalhes"
+
+                def formata_brincar(r):
+                    partes = []
+                    if r.get('com_que_brincou'): partes.append(f"brincou de: {format_list(r.get('com_que_brincou'))}")
+                    if r.get('modo'): partes.append(f"modo: {r.get('modo')}")
+                    if r.get('fez_faz_de_conta'): partes.append("faz de conta")
+                    return " | ".join(partes) if partes else "sem detalhes"
+
+                def formata_higiene(r):
+                    partes = [f"banho foi {r.get('banho') or 'ok'}"]
+                    if r.get('escovou_dentes'): partes.append("escovou dentes")
+                    if r.get('sinalizou_banheiro'): partes.append("sinalizou banheiro")
+                    return " | ".join(partes)
+
+                def formata_movimento(r):
+                    partes = []
+                    if r.get('atividades'): partes.append(format_list(r.get('atividades')))
+                    if r.get('caiu_muito'): partes.append("caiu muito")
+                    if r.get('buscou_colo'): partes.append("buscou bastante colo")
+                    return " | ".join(partes) if partes else "sem detalhes"
+
+                def formata_rotina(r):
+                    partes = []
+                    if r.get('guardou_brinquedos'): partes.append("guardou brinquedos")
+                    if r.get('ajudou_tarefa'): partes.append("ajudou em tarefas")
+                    if r.get('aceitou_transicao') is not None:
+                        partes.append("aceitou transições" if r.get('aceitou_transicao') else "resistiu a transições")
+                    return " | ".join(partes) if partes else "sem detalhes"
+
                 # Campos na ordem pedida
                 campos = [
-                    ("sono", "checklist_sono", "Sono", lambda r: f"dormiu às {r.get('dormiu_as') or '?'}, acordou às {r.get('acordou_as') or '?'}"),
-                    ("alimentacao", "checklist_alimentacao", "Alimentação", lambda r: "comeu bem" if r.get("comeu_bem") else "não comeu bem"),
-                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {r.get('tempo_minutos')} min" if r.get('usou_tela') else "não usou"),
-                    ("comunicacao", "checklist_comunicacao", "Comunicação", lambda r: "se comunicou" if r.get('usou_gestos') or r.get('palavras_ditas') else "registrado"),
-                    ("brincar", "checklist_brincar", "Brincar", lambda r: f"brincou com {r.get('com_que_brincou') or 'algo'}"),
-                    ("humor", "checklist_humor", "Humor", lambda r: r.get('humor_geral') or "registrado"),
-                    ("higiene", "checklist_higiene", "Higiene", lambda r: "registrado"),
-                    ("movimento", "checklist_movimento", "Movimento", lambda r: "registrado"),
-                    ("rotina", "checklist_rotina", "Rotina", lambda r: "registrado"),
+                    ("sono", "checklist_sono", "Sono", lambda r: f"dormiu às {format_time(r.get('dormiu_as'))}, acordou às {format_time(r.get('acordou_as'))}{' | acordou na noite' if r.get('acordou_noite') else ''}{' | teve cochilo' if r.get('cochilo') else ''}"),
+                    ("alimentacao", "checklist_alimentacao", "Alimentação", formata_alimentacao),
+                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {format_duration(r.get('tempo_minutos'))}{f' ({r.get('conteudo')})' if r.get('conteudo') else ''}" if r.get('usou_tela') else "não usou telas hoje! 🎉"),
+                    ("comunicacao", "checklist_comunicacao", "Comunicação", formata_comunicacao),
+                    ("brincar", "checklist_brincar", "Brincar", formata_brincar),
+                    ("humor", "checklist_humor", "Humor", lambda r: f"{r.get('humor_geral') or 'bom'}{' | teve crise' if r.get('teve_crise') else ''}{f' | acalmou com: {r.get('o_que_acalmou')}' if r.get('o_que_acalmou') else ''}"),
+                    ("higiene", "checklist_higiene", "Higiene", formata_higiene),
+                    ("movimento", "checklist_movimento", "Movimento", formata_movimento),
+                    ("rotina", "checklist_rotina", "Rotina", formata_rotina),
                 ]
+                
+                checklist_id = row['id']
                 
                 for key, tabela, nome, formatador in campos:
                     cur.execute(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
