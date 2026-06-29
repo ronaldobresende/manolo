@@ -18,7 +18,7 @@ from channels.schemas import ChecklistPayload
 
 from core.database import get_connection, _query_one, _query_many, _execute, _execute_returning
 from core.config import settings
-from core.security import get_current_user
+from core.security import get_current_user, get_password_hash
 from core.storage import upload_file_to_r2
 
 logger = logging.getLogger(__name__)

@@ -453,10 +453,10 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
                 campos = [
                     ("sono", "checklist_sono", "Sono", lambda r: f"dormiu às {format_time(r.get('dormiu_as'))}, acordou às {format_time(r.get('acordou_as'))}{' | acordou na noite' if r.get('acordou_noite') else ''}{' | teve cochilo' if r.get('cochilo') else ''}"),
                     ("alimentacao", "checklist_alimentacao", "Alimentação", formata_alimentacao),
-                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {format_duration(r.get('tempo_minutos'))}{f' ({r.get('conteudo')})' if r.get('conteudo') else ''}" if r.get('usou_tela') else "não usou telas hoje! 🎉"),
+                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {format_duration(r.get('tempo_minutos'))}{(' (' + r.get('conteudo') + ')') if r.get('conteudo') else ''}" if r.get('usou_tela') else "não usou telas hoje! 🎉"),
                     ("comunicacao", "checklist_comunicacao", "Comunicação", formata_comunicacao),
                     ("brincar", "checklist_brincar", "Brincar", formata_brincar),
-                    ("humor", "checklist_humor", "Humor", lambda r: f"{r.get('humor_geral') or 'bom'}{' | teve crise' if r.get('teve_crise') else ''}{f' | acalmou com: {r.get('o_que_acalmou')}' if r.get('o_que_acalmou') else ''}"),
+                    ("humor", "checklist_humor", "Humor", lambda r: f"{r.get('humor_geral') or 'bom'}{' | teve crise' if r.get('teve_crise') else ''}{(' | acalmou com: ' + r.get('o_que_acalmou')) if r.get('o_que_acalmou') else ''}"),
                     ("higiene", "checklist_higiene", "Higiene", formata_higiene),
                     ("movimento", "checklist_movimento", "Movimento", formata_movimento),
                     ("rotina", "checklist_rotina", "Rotina", formata_rotina),
