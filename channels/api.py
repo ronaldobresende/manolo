@@ -274,6 +274,7 @@ async def criar_checklist(
         for k, v in raw_dados.items():
             if v is None: continue
             if isinstance(v, str) and v == "": v = None
+            if isinstance(v, list) and len(v) == 0: v = None
             dados[k] = v
             
         if not dados: return
@@ -339,6 +340,7 @@ async def atualizar_checklist(
         for k, v in raw_dados.items():
             if v is None: continue
             if isinstance(v, str) and v == "": v = None
+            if isinstance(v, list) and len(v) == 0: v = None
             dados[k] = v
             
         if not dados: return

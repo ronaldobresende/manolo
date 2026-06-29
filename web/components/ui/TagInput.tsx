@@ -11,17 +11,25 @@ interface TagInputProps {
 export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: TagInputProps) {
   const [input, setInput] = useState('')
 
+  const addPendingTag = () => {
+    const val = input.trim().replace(/,$/, '')
+    if (val && !tags.includes(val)) {
+      onChange([...tags, val])
+    }
+    setInput('')
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
-      const val = input.trim()
-      if (val && !tags.includes(val)) {
-        onChange([...tags, val])
-        setInput('')
-      }
+      addPendingTag()
     } else if (e.key === 'Backspace' && !input && tags.length > 0) {
       onChange(tags.slice(0, -1))
     }
+  }
+
+  const handleBlur = () => {
+    addPendingTag()
   }
 
   const removeTag = (index: number) => {
@@ -52,6 +60,7 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
         value={input}
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
         placeholder={tags.length === 0 ? placeholder : ''}
         className="flex-1 min-w-[120px] outline-none text-sm text-manolo-text placeholder:text-manolo-muted bg-transparent p-1"
       />
