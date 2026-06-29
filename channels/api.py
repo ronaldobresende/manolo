@@ -154,6 +154,9 @@ async def listar_checklists(
             cs.dormiu_as,
             cs.acordou_as,
             cs.acordou_noite,
+            -- Tela
+            ct.usou_tela,
+            ct.tempo_minutos AS tempo_tela_minutos,
             -- Humor
             ch2.humor_geral,
             ch2.teve_crise,
@@ -169,6 +172,7 @@ async def listar_checklists(
             cb.modo AS modo_brincar
         FROM checklists ch
         LEFT JOIN checklist_sono cs ON cs.checklist_id = ch.id
+        LEFT JOIN checklist_tela ct ON ct.checklist_id = ch.id
         LEFT JOIN checklist_humor ch2 ON ch2.checklist_id = ch.id
         LEFT JOIN checklist_comunicacao cc ON cc.checklist_id = ch.id
         LEFT JOIN checklist_alimentacao ca ON ca.checklist_id = ch.id

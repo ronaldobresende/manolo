@@ -101,6 +101,8 @@ export interface ChecklistResumo {
   utensilio?: string
   tempo_sem_tela_minutos?: number
   modo_brincar?: string
+  usou_tela?: boolean
+  tempo_tela_minutos?: number
 }
 
 export interface SecaoSono {

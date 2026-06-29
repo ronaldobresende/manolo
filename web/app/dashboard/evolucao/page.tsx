@@ -7,7 +7,7 @@ import { getCriancaSelecionada } from '@/lib/auth'
 import type { ChecklistResumo, PeriodoFiltro } from '@/types/manolo'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend
+  Tooltip, ResponsiveContainer, Legend, ReferenceLine
 } from 'recharts'
 import { format, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -29,6 +29,14 @@ function horaParaDecimal(hora?: string): number | null {
   return h + m / 60
 }
 
+function horaParaDecimalContinuo(hora?: string): number | null {
+  if (!hora) return null
+  const [h, m] = hora.split(':').map(Number)
+  let decimal = h + m / 60
+  if (decimal < 12) decimal += 24 // Trata madrugada (ex: 01:00 vira 25.0)
+  return decimal
+}
+
 function calcularHorasSono(c: ChecklistResumo): number | null {
   if (!c.dormiu_as || !c.acordou_as) return null
   const dormiu = horaParaDecimal(c.dormiu_as)
@@ -46,9 +54,12 @@ interface GraficoProps {
   dados: Record<string, unknown>[]
   linhas: { dataKey: string; nome: string; cor: string }[]
   yLabel?: string
+  metaLinha?: { y: number; label: string; stroke?: string }
+  yTickFormatter?: (value: any) => string
+  tooltipFormatter?: (value: any, name: string) => [string, string]
 }
 
-function Grafico({ dados, linhas, yLabel }: GraficoProps) {
+function Grafico({ dados, linhas, yLabel, metaLinha, yTickFormatter, tooltipFormatter }: GraficoProps) {
   if (!dados.length) {
     return (
       <div className="h-40 flex items-center justify-center text-manolo-muted text-sm">
@@ -61,8 +72,14 @@ function Grafico({ dados, linhas, yLabel }: GraficoProps) {
       <LineChart data={dados} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="data" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fontSize: 10 } : undefined} />
+        <YAxis 
+          tickFormatter={yTickFormatter} 
+          tick={{ fontSize: 11 }} 
+          domain={['auto', 'auto']}
+          label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fontSize: 10 } : undefined} 
+        />
         <Tooltip
+          formatter={tooltipFormatter}
           contentStyle={{
             background: '#fff',
             border: '1px solid #E8E4DE',
@@ -71,6 +88,9 @@ function Grafico({ dados, linhas, yLabel }: GraficoProps) {
           }}
         />
         <Legend iconType="circle" iconSize={8} />
+        {metaLinha && (
+          <ReferenceLine y={metaLinha.y} stroke={metaLinha.stroke || "#e11d48"} strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: metaLinha.label, fill: metaLinha.stroke || "#e11d48", fontSize: 12 }} />
+        )}
         {linhas.map(l => (
           <Line
             key={l.dataKey}
@@ -141,7 +161,16 @@ export default function EvolucaoPage() {
     dados.map(c => ({
       data: formatData(c.data),
       'Horas de sono': calcularHorasSono(c),
+      'Dormiu às': horaParaDecimalContinuo(c.dormiu_as),
       'Acordou à noite': c.acordou_noite ? 1 : 0,
+    })),
+    [dados]
+  )
+
+  const dadosTela = useMemo(() =>
+    dados.map(c => ({
+      data: formatData(c.data),
+      'Tempo de tela': c.tempo_tela_minutos != null ? c.tempo_tela_minutos / 60 : null,
     })),
     [dados]
   )
@@ -208,6 +237,55 @@ export default function EvolucaoPage() {
               { dataKey: 'Acordou à noite', nome: 'Acordou à noite (0/1)', cor: '#7C8C99' },
             ]}
             yLabel="horas"
+          />
+        </SecaoGrafico>
+
+        <SecaoGrafico titulo="Horário de Dormir" emoji="⏰">
+          <Grafico
+            dados={dadosSono}
+            linhas={[
+              { dataKey: 'Dormiu às', nome: 'Dormiu às', cor: '#52B788' },
+            ]}
+            metaLinha={{ y: 20.5, label: "Meta (20:30)" }}
+            yTickFormatter={(val: number) => {
+              let h = Math.floor(val)
+              if (h >= 24) h -= 24
+              const m = Math.round((val - Math.floor(val)) * 60)
+              return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
+            }}
+            tooltipFormatter={(val: any, name: string) => {
+              if (typeof val === 'number') {
+                let h = Math.floor(val)
+                if (h >= 24) h -= 24
+                const m = Math.round((val - Math.floor(val)) * 60)
+                return [`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`, name]
+              }
+              return [val, name]
+            }}
+          />
+        </SecaoGrafico>
+
+        <SecaoGrafico titulo="Uso de Telas" emoji="📱">
+          <Grafico
+            dados={dadosTela}
+            linhas={[
+              { dataKey: 'Tempo de tela', nome: 'Tempo de tela', cor: '#B5451B' },
+            ]}
+            yTickFormatter={(val: number) => {
+              const h = Math.floor(val)
+              const m = Math.round((val - h) * 60)
+              if (h === 0) return `${m}m`
+              return `${h}h${m.toString().padStart(2, '0')}m`
+            }}
+            tooltipFormatter={(val: any, name: string) => {
+              if (typeof val === 'number') {
+                const h = Math.floor(val)
+                const m = Math.round((val - h) * 60)
+                if (h === 0) return [`${m}m`, name]
+                return [`${h}h${m.toString().padStart(2, '0')}m`, name]
+              }
+              return [val, name]
+            }}
           />
         </SecaoGrafico>
 
