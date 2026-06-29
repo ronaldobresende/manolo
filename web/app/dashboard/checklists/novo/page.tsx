@@ -29,9 +29,59 @@ const DEFAULT_STATE = {
   observacoes: { conquistas: '', dificuldades: '', diferente_hoje: '' }
 }
 
+function getSectionStatus(section: string, form: typeof DEFAULT_STATE, loadedSections: string[]) {
+  if (!loadedSections.includes(section)) return 'not_started'
+  
+  const data: any = form[section as keyof typeof form]
+  let isComplete = true
+  
+  switch (section) {
+    case 'sono':
+      isComplete = !!(data.dormiu_as && data.acordou_as)
+      break
+    case 'tela':
+      isComplete = !data.usou_tela || !!(data.tempo_minutos > 0 && data.conteudo && data.reacao_retirada)
+      break
+    case 'alimentacao':
+      isComplete = !!data.utensilio
+      break
+    case 'comunicacao':
+      isComplete = !!(data.puxou_mao && data.respondeu_nome)
+      break
+    case 'brincar':
+      isComplete = !!data.modo
+      break
+    case 'higiene':
+      isComplete = !!data.banho
+      break
+    case 'humor':
+      isComplete = !!data.humor_geral
+      break
+    default:
+      isComplete = true 
+  }
+  
+  return isComplete ? 'complete' : 'incomplete'
+}
+
 // Componente Card de Seção Colapsável
-function SectionCard({ title, icon: Icon, isPartial, children }: any) {
+function SectionCard({ title, icon: Icon, status, children }: any) {
   const [isOpen, setIsOpen] = useState(false)
+  
+  let statusBadge = null
+  let iconColor = 'bg-neutral-bg text-manolo-muted'
+  
+  if (status === 'complete') {
+    statusBadge = <span className="text-[10px] uppercase font-bold bg-green-500/20 text-green-700 px-2 py-0.5 rounded-full">Completo</span>
+    iconColor = 'bg-green-500/20 text-green-700'
+  } else if (status === 'incomplete') {
+    statusBadge = <span className="text-[10px] uppercase font-bold bg-yellow-500/20 text-yellow-700 px-2 py-0.5 rounded-full">Incompleto</span>
+    iconColor = 'bg-yellow-500/20 text-yellow-700'
+  } else {
+    statusBadge = <span className="text-[10px] uppercase font-bold bg-red-500/10 text-red-600 px-2 py-0.5 rounded-full">Não Iniciado</span>
+    iconColor = 'bg-red-500/10 text-red-600'
+  }
+
   return (
     <div className="card overflow-hidden transition-all duration-300">
       <div 
@@ -39,11 +89,11 @@ function SectionCard({ title, icon: Icon, isPartial, children }: any) {
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isPartial ? 'bg-primary/20 text-primary-dark' : 'bg-neutral-bg text-manolo-muted'}`}>
+          <div className={`p-2 rounded-lg ${iconColor}`}>
             <Icon className="w-5 h-5" />
           </div>
           <h3 className="font-semibold text-manolo-text">{title}</h3>
-          {isPartial && <span className="text-[10px] uppercase font-bold bg-secondary/30 text-secondary-dark px-2 py-0.5 rounded-full">Parcial Salvo</span>}
+          {statusBadge}
         </div>
         {isOpen ? <IconChevronUp className="w-5 h-5 text-manolo-muted" /> : <IconChevronDown className="w-5 h-5 text-manolo-muted" />}
       </div>
@@ -181,7 +231,7 @@ function ChecklistNovoContent() {
 
       <div className="space-y-4">
         {/* SONO */}
-        <SectionCard title="Sono" icon={IconMoon} isPartial={loadedSections.includes('sono')}>
+        <SectionCard title="Sono" icon={IconMoon} status={getSectionStatus('sono', form, loadedSections)}>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Dormiu às</label>
@@ -203,7 +253,7 @@ function ChecklistNovoContent() {
         </SectionCard>
 
         {/* ALIMENTACAO */}
-        <SectionCard title="Alimentação" icon={IconSoup} isPartial={loadedSections.includes('alimentacao')}>
+        <SectionCard title="Alimentação" icon={IconSoup} status={getSectionStatus('alimentacao', form, loadedSections)}>
           <div className="flex gap-6 mb-4">
             <Toggle label="Comeu bem?" checked={form.alimentacao.comeu_bem} onChange={v => updateSection('alimentacao', 'comeu_bem', v)} />
             <Toggle label="Comeu sentado?" checked={form.alimentacao.comeu_sentado} onChange={v => updateSection('alimentacao', 'comeu_sentado', v)} />
@@ -231,7 +281,7 @@ function ChecklistNovoContent() {
         </SectionCard>
 
         {/* COMUNICAÇÃO */}
-        <SectionCard title="Comunicação" icon={IconMessageCircle} isPartial={loadedSections.includes('comunicacao')}>
+        <SectionCard title="Comunicação" icon={IconMessageCircle} status={getSectionStatus('comunicacao', form, loadedSections)}>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Toggle label="Usou gestos?" checked={form.comunicacao.usou_gestos} onChange={v => updateSection('comunicacao', 'usou_gestos', v)} />
             <Toggle label="Apontou?" checked={form.comunicacao.apontou} onChange={v => updateSection('comunicacao', 'apontou', v)} />
@@ -265,7 +315,7 @@ function ChecklistNovoContent() {
         </SectionCard>
 
         {/* BRINCAR */}
-        <SectionCard title="Brincar" icon={IconPuzzle} isPartial={loadedSections.includes('brincar')}>
+        <SectionCard title="Brincar" icon={IconPuzzle} status={getSectionStatus('brincar', form, loadedSections)}>
           <div className="flex gap-6 mb-4">
             <Toggle label="Fez faz-de-conta?" checked={form.brincar.fez_faz_de_conta} onChange={v => updateSection('brincar', 'fez_faz_de_conta', v)} />
           </div>
@@ -291,7 +341,7 @@ function ChecklistNovoContent() {
         </SectionCard>
 
         {/* HUMOR */}
-        <SectionCard title="Humor e Regulação" icon={IconMoodSmile} isPartial={loadedSections.includes('humor')}>
+        <SectionCard title="Humor e Regulação" icon={IconMoodSmile} status={getSectionStatus('humor', form, loadedSections)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="label">Humor Geral</label>
@@ -325,7 +375,7 @@ function ChecklistNovoContent() {
         </SectionCard>
 
         {/* TELA */}
-        <SectionCard title="Uso de Telas" icon={IconDeviceTv} isPartial={loadedSections.includes('tela')}>
+        <SectionCard title="Uso de Telas" icon={IconDeviceTv} status={getSectionStatus('tela', form, loadedSections)}>
           <div className="mb-4">
             <Toggle label="Usou telas hoje?" checked={form.tela.usou_tela} onChange={v => updateSection('tela', 'usou_tela', v)} />
           </div>
@@ -353,7 +403,7 @@ function ChecklistNovoContent() {
         </SectionCard>
         
         {/* OUTROS: Higiene, Vestuário, Movimento, Rotina, Observações */}
-        <SectionCard title="Outros (Higiene, Vestuário, Movimento...)" icon={IconActivity} isPartial={loadedSections.includes('higiene')}>
+        <SectionCard title="Outros (Higiene, Vestuário, Movimento...)" icon={IconActivity} status={getSectionStatus('higiene', form, loadedSections)}>
            <div className="space-y-6">
               {/* Higiene */}
               <div>
