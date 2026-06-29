@@ -13,8 +13,8 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
 
   const addPendingTag = () => {
     const val = input.trim().replace(/,$/, '')
-    if (val && !tags.includes(val)) {
-      onChange([...tags, val])
+    if (val && !(tags || []).includes(val)) {
+      onChange([...(tags || []), val])
     }
     setInput('')
   }
@@ -23,8 +23,8 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       addPendingTag()
-    } else if (e.key === 'Backspace' && !input && tags.length > 0) {
-      onChange(tags.slice(0, -1))
+    } else if (e.key === 'Backspace' && !input && (tags || []).length > 0) {
+      onChange((tags || []).slice(0, -1))
     }
   }
 
@@ -33,14 +33,14 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
   }
 
   const removeTag = (index: number) => {
-    const newTags = [...tags]
+    const newTags = [...(tags || [])]
     newTags.splice(index, 1)
     onChange(newTags)
   }
 
   return (
     <div className="flex flex-wrap gap-2 p-2 border border-neutral-border rounded-lg bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-      {tags.map((tag, i) => (
+      {(tags || []).map((tag, i) => (
         <span 
           key={i} 
           className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary-dark text-sm rounded-md"
