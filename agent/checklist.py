@@ -415,5 +415,5 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
         logger.error(f"Erro ao formatar resumo: {e}")
         return f"Não consegui buscar o relatório de {data_fmt}."
         
-    resumo += "\nComplete o que faltou no app: https://app.manolo.com"
+    resumo += "\nComplete o que faltou no app: https://www.manolo.app.br/dashboard/checklists"
     return resumo

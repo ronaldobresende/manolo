@@ -14,7 +14,7 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
   const safeTags = Array.isArray(tags) ? tags : []
 
   const addPendingTag = () => {
-    const val = input.trim().replace(/,$/, '')
+    const val = input.trim()
     if (val && !safeTags.includes(val)) {
       onChange([...safeTags, val])
     }
@@ -22,7 +22,7 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
+    if (e.key === 'Enter') {
       e.preventDefault()
       addPendingTag()
     } else if (e.key === 'Backspace' && !input && safeTags.length > 0) {

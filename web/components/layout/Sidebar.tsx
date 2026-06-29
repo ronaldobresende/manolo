@@ -32,8 +32,16 @@ export function Sidebar({ criancaNome = 'Bernardo' }: SidebarProps) {
       {/* Logo / Identidade */}
       <div className="px-5 py-6 border-b border-neutral-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-base">M</span>
+          <div className="w-9 h-9 flex-shrink-0">
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-full h-full object-contain rounded-lg shadow-sm"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><rect width="36" height="36" rx="8" fill="%232b7a5a"/><text x="18" y="24" font-family="Arial" font-size="16" font-weight="bold" fill="white" text-anchor="middle">M</text></svg>';
+              }}
+            />
           </div>
           <div>
             <p className="text-sm font-semibold text-manolo-text leading-tight">Manolo</p>
