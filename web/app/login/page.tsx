@@ -37,8 +37,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-neutral-bg p-4">
       <div className="card w-full max-w-md p-8 animate-fade-in">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-lg bg-primary mx-auto flex items-center justify-center mb-4">
-            <span className="text-white font-bold text-xl">M</span>
+          <div className="w-16 h-16 mx-auto flex items-center justify-center mb-2">
+            <img src="/logo.png" alt="Manolo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-manolo-text">Manolo</h1>
           <p className="text-sm text-manolo-muted mt-1">Acesso ao Dashboard</p>

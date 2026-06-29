@@ -178,6 +178,14 @@ export default function EvolucaoPage() {
     [dados]
   )
 
+  const mediaTelaMinutos = useMemo(() => {
+    const validos = dados.filter(c => c.tempo_tela_minutos != null)
+    if (validos.length === 0) return null
+    const soma = validos.reduce((acc, c) => acc + c.tempo_tela_minutos!, 0)
+    return Math.round(soma / validos.length)
+  }, [dados])
+
+
   const dadosComunicacao = useMemo(() =>
     dados.map(c => ({
       data: formatData(c.data),
@@ -271,6 +279,13 @@ export default function EvolucaoPage() {
         </SecaoGrafico>
 
         <SecaoGrafico titulo="Uso de Telas" emoji="📱">
+          {mediaTelaMinutos !== null && (
+            <p className="text-sm text-manolo-muted mb-2">
+              Média do período: <span className="font-semibold text-manolo-text">
+                {Math.floor(mediaTelaMinutos / 60)}h{(mediaTelaMinutos % 60).toString().padStart(2, '0')}m
+              </span>
+            </p>
+          )}
           <Grafico
             dados={dadosTela}
             linhas={[

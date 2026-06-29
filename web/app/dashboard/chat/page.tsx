@@ -129,12 +129,12 @@ export default function ChatPage() {
             >
               {/* Avatar */}
               <div className={clsx(
-                'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1',
+                'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1 overflow-hidden',
                 m.role === 'user'
                   ? 'bg-neutral-border text-manolo-muted'
-                  : 'bg-primary text-white'
+                  : 'bg-transparent'
               )}>
-                {m.role === 'user' ? 'Eu' : 'M'}
+                {m.role === 'user' ? 'Eu' : <img src="/logo.png" alt="Manolo" className="w-full h-full object-cover" />}
               </div>
 
               {/* Balão */}
