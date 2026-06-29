@@ -245,7 +245,8 @@ async def criar_checklist(
     payload: ChecklistPayload,
     user: dict = Depends(get_current_user)
 ):
-    """Cria um checklist novo."""
+    """Cria um checklist novo para a criança na data fornecida."""
+    logger.info(f"[CHECKLIST] Criando checklist para {crianca_id}. Payload: {payload.model_dump()}")
     # Verificar se já existe (não deve duplicar)
     existente = _query_one(
         "SELECT id FROM checklists WHERE crianca_id = %s AND data = %s",
@@ -314,6 +315,7 @@ async def atualizar_checklist(
     user: dict = Depends(get_current_user)
 ):
     """Atualiza um checklist existente (merge/upsert)."""
+    logger.info(f"[CHECKLIST] Atualizando checklist para {crianca_id} na data {data}. Payload: {payload.model_dump()}")
     checklist = _query_one(
         "SELECT id FROM checklists WHERE crianca_id = %s AND data = %s",
         (crianca_id, data)
