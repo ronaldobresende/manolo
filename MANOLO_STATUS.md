@@ -92,16 +92,15 @@ Agente usado: Claude Opus 4.6
 
 > Algo que funciona mas não está certo, ou que foi deixado para depois.
 - **Configuração WhatsApp (Produção):** A implantação final com um número de telefone permanente ainda depende da resolução de um problema com a operadora. O desenvolvimento está funcional com o token de acesso temporário da Meta.
-- **Persistência de Estado (LangGraph):** O MemorySaver atual é in-memory — um restart do Render limpa o estado das conversas (campo_pendente). Migrar para checkpoint no Neon futuramente.
-- **Desalinhamento de Datas:** O formato de data no prompt (`DD/MM/YYYY`) difere do banco (`YYYY-MM-DD`). Documentado no `DEBITOS_TECNICOS.md`.
+- **Persistência de Estado (LangGraph):** O MemorySaver atual é in-memory — um restart do Render limpa o histórico de `data_contexto`. Migrar para checkpoint no Neon futuramente.
 - **RAG Temporal:** Busca vetorial não filtra por data — retorna documentos antigos com igual prioridade. Documentado no `DEBITOS_TECNICOS.md`.
 
 ---
 
 ## Próximo passo
-> 1. Testes em produção do novo motor LangGraph (extração Pydantic, empatia e guardrails) no WhatsApp Business.
+> 1. Testes em produção do grafo simplificado (extração silenciosa, relatório sob demanda, sem cobranças) no WhatsApp Business.
 > 2. Integração definitiva da KB Denver (`core/kb/`) no `profile.py` para enriquecer a terminologia clínica do Perfil Vivo.
-> 3. **Evolução do Nó 6 (Cobrança):** Implementar RAG na KB Denver para que o LLM substitua as perguntas engessadas do dicionário por perguntas ativas de triagem clínica baseadas nos marcos de desenvolvimento do ESDM.
+> 3. **Migração do MemorySaver** para checkpoint persistente no Neon (`langgraph-checkpoint-postgres`) para não perder `data_contexto` a cada restart.
 ---
 
 ## Histórico de sessões
@@ -127,3 +126,5 @@ Agente usado: Claude Opus 4.6
 | Jun 2026 | Gemini 3.1 Pro | Refatoração completa da extração (Structured Outputs via Pydantic), mapeamento direto em colunas SQL, conversão de datas (BR), **empatia orgânica**, e **guardrails de escopo e clínico**. \n\n**Atualização Crítica de Arquitetura (Amnésia de Data):** Refatoração do Schema para suportar extração de múltiplos dias em uma única mensagem (`List[RelatoDiario]`). Implementada ancoragem de contexto temporal (`data_contexto` na state do LangGraph), bloqueio de alucinação no RAG (separação estrita de Perfil Vivo e Eventos Diários), confirmação leve para datas implícitas/ambíguas, cálculo de dias da semana (ex: 'quarta passada') por LLM, e função SQL `mesclar_checklists` para Correção Retroativa de Datas (Ctrl+Z invisível). |
 | Jun 2026 | Gemini 3.1 Pro | Implementação da **Fase 4 e 4.1 (Web App e Autenticação)**. Criação completa do frontend Next.js com dashboards e gráficos (Recharts). Backend estendido com rotas REST e sistema de segurança (JWT com bcrypt), Server Actions no frontend e Next.js Middleware para roteamento privado. |
 | Jun 2026 | Gemini 3.1 Pro | **Simplificação Radical do LangGraph (Pragmatismo & Segurança):** Removidos os nós proativos de cobrança de pendências (Nós 5 e 6). Grafo reordenado para iniciar na `classificar_intencao`, roteando para Extração Silenciosa ou RAG. `salvar_campo_individual` alterado para `DO NOTHING` (nunca sobrescrever, resolvendo o bug de deleção de dados acidental). Implementado Nó de Relatório Sob Demanda para retornar um resumo formatado (`formatar_resumo_diario`) com link para o Web App. |
+| Jun 2026 | Gemini 3.1 Pro | **Refinamento do Web App e Infraestrutura:** Correção de bugs de UI/UX críticos no `TagInput` (crash de tela e delimitador por vírgula) que impediam carregamento dos checklists de Comunicação e Brincar. Ajuste na interface do menu lateral para suportar o carregamento nativo de `logo.png`. Orientação e documentação para credenciais Cloudflare R2 corrigindo falhas de upload de fotos de perfil. Ampliação do Dashboard de Evolução, com gráficos detalhados de Horário de Dormir (com meta dinâmica invertida) e Tempo de Tela (convertido para HH:MM). Refatoração completa da formatação da string de resumo do robô no WhatsApp, entregando relatórios super descritivos ao invés de booleanos simples. |
+| Jun 2026 | Claude Sonnet 4.6 / Gemini 3.1 Pro | **Correção de 3 Bugs Críticos no RAG e Relatórios (identificados em logs de produção):** (1) **RAG cego para checklists** — `buscar_contexto_checklists` em `memory.py` reescrita com JOIN completo nas 10 tabelas filhas (alimentação, brincar, tela, comunicação, higiene, vestuario, movimento, rotina, observações); antes só 3 tabelas eram consultadas, tornando 70% dos dados invisíveis ao RAG. (2) **Alucinação Perfil Vivo vs. Eventos** — adicionado guardrail explícito no `prompt_usuario` do nó RAG impedindo o LLM de substituir dados reais ausentes pelas preferências genéricas do Perfil Vivo. (3) **Relatório ignorava a data pedida** — `gerar_relatorio_checklist_node` em `agent.py` agora extrai a data diretamente da mensagem (regex DD/MM/YYYY e YYYY-MM-DD) antes de consultar o banco. |
