@@ -57,9 +57,11 @@ interface GraficoProps {
   metaLinha?: { y: number; label: string; stroke?: string }
   yTickFormatter?: (value: any) => string
   tooltipFormatter?: (value: any, name: string) => [string, string]
+  yDomain?: any[]
+  yReversed?: boolean
 }
 
-function Grafico({ dados, linhas, yLabel, metaLinha, yTickFormatter, tooltipFormatter }: GraficoProps) {
+function Grafico({ dados, linhas, yLabel, metaLinha, yTickFormatter, tooltipFormatter, yDomain, yReversed }: GraficoProps) {
   if (!dados.length) {
     return (
       <div className="h-40 flex items-center justify-center text-manolo-muted text-sm">
@@ -75,7 +77,8 @@ function Grafico({ dados, linhas, yLabel, metaLinha, yTickFormatter, tooltipForm
         <YAxis 
           tickFormatter={yTickFormatter} 
           tick={{ fontSize: 11 }} 
-          domain={['auto', 'auto']}
+          domain={yDomain || ['auto', 'auto']}
+          reversed={yReversed}
           label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fontSize: 10 } : undefined} 
         />
         <Tooltip
@@ -246,7 +249,9 @@ export default function EvolucaoPage() {
             linhas={[
               { dataKey: 'Dormiu às', nome: 'Dormiu às', cor: '#52B788' },
             ]}
-            metaLinha={{ y: 20.5, label: "Meta (20:30)" }}
+            metaLinha={{ y: 20.5, label: "Meta (20:30)", stroke: "#2D6A4F" }}
+            yDomain={[19.0, 'auto']}
+            yReversed={true}
             yTickFormatter={(val: number) => {
               let h = Math.floor(val)
               if (h >= 24) h -= 24
