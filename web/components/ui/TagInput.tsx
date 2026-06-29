@@ -11,10 +11,12 @@ interface TagInputProps {
 export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: TagInputProps) {
   const [input, setInput] = useState('')
 
+  const safeTags = Array.isArray(tags) ? tags : []
+
   const addPendingTag = () => {
     const val = input.trim().replace(/,$/, '')
-    if (val && !(tags || []).includes(val)) {
-      onChange([...(tags || []), val])
+    if (val && !safeTags.includes(val)) {
+      onChange([...safeTags, val])
     }
     setInput('')
   }
@@ -23,8 +25,8 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       addPendingTag()
-    } else if (e.key === 'Backspace' && !input && (tags || []).length > 0) {
-      onChange((tags || []).slice(0, -1))
+    } else if (e.key === 'Backspace' && !input && safeTags.length > 0) {
+      onChange(safeTags.slice(0, -1))
     }
   }
 
@@ -33,14 +35,14 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
   }
 
   const removeTag = (index: number) => {
-    const newTags = [...(tags || [])]
+    const newTags = [...safeTags]
     newTags.splice(index, 1)
     onChange(newTags)
   }
 
   return (
     <div className="flex flex-wrap gap-2 p-2 border border-neutral-border rounded-lg bg-white focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all">
-      {(tags || []).map((tag, i) => (
+      {safeTags.map((tag, i) => (
         <span 
           key={i} 
           className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary-dark text-sm rounded-md"
@@ -61,7 +63,7 @@ export function TagInput({ tags = [], onChange, placeholder = 'Adicionar...' }: 
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
-        placeholder={tags.length === 0 ? placeholder : ''}
+        placeholder={safeTags.length === 0 ? placeholder : ''}
         className="flex-1 min-w-[120px] outline-none text-sm text-manolo-text placeholder:text-manolo-muted bg-transparent p-1"
       />
     </div>
