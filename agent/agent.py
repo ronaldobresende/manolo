@@ -215,13 +215,15 @@ REGRAS DE DATA E CONTEXTO:
                 logger.info("[EXTRAÇÃO SILENCIOSA] Data/Contexto ambíguo detectado.")
                 resposta = "Anotado! Só me confirma uma coisa: em qual dia exatamente isso aconteceu? Assim eu guardo na caixinha certa. 🥰"
             else:
-                # Salva no banco silenciosamente
+                # Salva no banco (Extração Silenciosa)
                 for relato in resultado.relatos:
                     data_ref = relato.data_referencia_iso or nova_data_contexto
                     nova_data_contexto = data_ref
                     
                     analise_json = relato.model_dump_json()
                     salvar_checklist(crianca_id, usuario_id, data_ref, "whatsapp_texto", analise_json)
+
+                resposta = "Anotado! ✅"
             
             return {
                 "dados_extraidos": resultado.model_dump(mode='json'),
@@ -229,6 +231,8 @@ REGRAS DE DATA E CONTEXTO:
                 "resposta": resposta
             }
         else:
+            if not resposta:
+                resposta = "Desculpe, não consegui identificar dados de rotina na sua mensagem. Pode me contar com mais detalhes?"
             return {"dados_extraidos": None, "resposta": resposta}
 
     except Exception as e:

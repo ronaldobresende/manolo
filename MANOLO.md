@@ -27,13 +27,13 @@ A primeira criança do sistema é **Bernardo**, filho do administrador. O sistem
 | Decisão | Escolha | Motivo |
 |---|---|---|
 | Canal primário de input | WhatsApp Business API | Zero atrito para família, todos já usam |
-| Canal de gestão | Web App (futuro) | Histórico visual, perfis de terapeuta |
-| Autenticação WhatsApp | Número de telefone na lista de autorizados | MVP simples, gestão manual pelo admin |
+| Canal de gestão | Web App (Next.js) | Histórico visual, gráficos, perfis de terapeuta |
+| Autenticação | Número de telefone (WhatsApp) + JWT via cookies (Web) | Segurança e isolamento completo entre sessões |
 | Backend | Python + FastAPI | Ecossistema LLM mais maduro em Python |
 | Banco relacional | PostgreSQL + pgvector | Relacional + busca vetorial no mesmo banco |
-| Object storage | Cloudflare R2 ou Supabase Storage | Custo baixo, PDFs, vídeos, áudios |
-| LLM | Claude (Anthropic) ou Groq (Llama) | Qualidade de resposta, custo controlado |
-| Transcrição de áudio | Whisper (local) | Custo zero, funciona bem em português |
+| Object storage | Cloudflare R2 | Custo baixo, PDFs, vídeos, áudios |
+| LLM | OpenAI (gpt-4o / gpt-4o-mini) | Melhor qualidade de estruturação de dados |
+| Transcrição de áudio | Whisper API (OpenAI) | Mais rápida e consome menos recursos locais |
 | Hospedagem | Render ou Railway | Simples, barato, CI/CD via GitHub |
 | Multi-tenant | Por account_id em todas as tabelas | Isolamento completo entre famílias/clínicas |
 
@@ -72,16 +72,15 @@ Fase 4 — Web App
 ```
 fastapi>=0.111.0
 uvicorn
-pydantic>=2.0          # usar Pydantic v2 — v1 tem sintaxe diferente
+pydantic>=2.0          # usar Pydantic v2 (Structured Outputs)
 psycopg2-binary
 pgvector
 supabase
 pypdf
-openai-whisper         # rodar local, modelo "medium" para português
-openai                 # LLM do agente (gpt-4o) + embeddings (text-embedding-3-small)
-                       # para trocar o LLM depois: mudar model string e chave — estrutura não muda
-langchain>=0.2         # usar só para RAG e memória, não para chamadas LLM
-langgraph>=0.1         # orquestração do agente com fluxos condicionais
+openai                 # LLM do agente, embeddings e Whisper API
+langsmith              # observabilidade e tracing de execução
+langchain>=0.2         # RAG e busca semântica
+langgraph>=0.1         # orquestração do agente (grafo de 4 nós)
 httpx
 python-dotenv
 ```
@@ -94,25 +93,18 @@ python-dotenv
 | Embeddings | `openai` text-embedding-3-small | Mais testado com pgvector + LangChain, boa qualidade em PT, independente do LLM do agente — não trocar depois sem reindexar todo o pgvector |
 | Orquestração do agente | LangGraph | Fluxos condicionais: checklist vs pergunta livre vs ingestão |
 | RAG / busca semântica | LangChain + pgvector | Integração direta com Postgres, sem serviço externo |
-| Validação de dados | Pydantic v2 | Nativo no FastAPI — usar `model_config`, não `class Config` da v1 |
+| Validação de dados | Pydantic v2 | Nativo no FastAPI e suporta Structured Outputs da OpenAI |
 | Leitura de PDF | pypdf | Simples e suficiente para laudos — não usar pdfplumber ou pymupdf |
-| Transcrição | Whisper local, modelo `medium` | Melhor custo-benefício em português |
+| Transcrição | Whisper API (OpenAI) | Rápido, preciso, elimina necessidade de hardware local pesado |
 
 ### Sobre LangGraph no Manolo
 
-O agente precisa tomar decisões a cada mensagem recebida:
+O agente usa um grafo simplificado e pragmático de 4 nós focais:
 
-```
-mensagem chega
-      ↓
-  É áudio? → transcreve → é checklist ou pergunta?
-  É PDF?   → pipeline de ingestão
-  É texto? → é checklist, pergunta ou comando?
-      ↓
-  roteia para o nó correto do grafo
-```
-
-LangGraph modela isso como um grafo de estados — cada nó é uma função Python, as arestas são as condições. É mais explícito e debugável do que chains encadeadas do LangChain.
+1. **classificar_intencao**: Analisa a mensagem do usuário e roteia condicionalmente.
+2. **extrair_checklist_silencioso**: Extrai informações da rotina diária em JSON, salva com UPSERT cumulativo no banco, e responde sem cobranças proativas ("Anotado! ✅").
+3. **responder_pergunta_rag**: Responde perguntas acessando o Perfil Vivo e o vetor de laudos. Usa guardrails para evitar alucinações.
+4. **gerar_relatorio_checklist_node**: Puxa o resumo do banco quando o usuário pede, incluindo link direto pro Web App.
 
 ### Infraestrutura local (docker-compose.yml)
 
@@ -170,9 +162,10 @@ manolo/
 ├── core/                      # núcleo do sistema
 │   ├── __init__.py
 │   ├── config.py              # variáveis e configurações globais
-│   ├── clients.py             # clientes OpenAI, Groq, etc
+│   ├── clients.py             # clientes OpenAI (c/ wrap_openai)
 │   ├── database.py            # conexão e criação das tabelas
-│   └── memory.py              # busca semântica RAG
+│   ├── memory.py              # busca semântica RAG
+│   └── kb/                    # base de conhecimento (Denver ESDM, etc)
 │
 ├── ingestion/                 # pipelines de ingestão de documentos
 │   ├── __init__.py
@@ -180,22 +173,23 @@ manolo/
 │   ├── pdf_processor.py       # extração de texto de PDF
 │   ├── converte_pdf.py        # OCR para PDFs escaneados (débito técnico)
 │   ├── ingestion_pdf.py       # pipeline completo PDF
-│   ├── audio_processor.py     # transcrição Whisper/Groq
+│   ├── audio_processor.py     # transcrição Whisper API
 │   ├── ingestion_audio.py     # pipeline completo áudio
 │   └── ingestion_video.py     # pipeline completo vídeo (Gemini nativo)
 │
 ├── agent/                     # cérebro do Manolo
 │   ├── __init__.py
-│   ├── agent.py               # orquestração LangGraph
-│   ├── checklist.py           # parsing e persistência do checklist
+│   ├── agent.py               # orquestração LangGraph (4 nós)
+│   ├── checklist.py           # parsing e persistência (UPSERT diário)
 │   └── profile.py             # atualização do perfil vivo da criança
 │
-├── channels/                  # interfaces de entrada
+├── channels/                  # interfaces de entrada e backend
 │   ├── __init__.py
-│   ├── main.py                # FastAPI + webhook (fase 3)
-│   ├── telegram_bot.py        # bot Telegram (fase 1.5 — ativo)
-    ├── chat.py                # agente no terminal (fase 1)
-│   └── whatsapp.py            # WhatsApp Business API (fase 3)
+│   ├── api.py                 # Backend API REST para o Web App
+│   ├── main.py                # FastAPI + webhook do WhatsApp
+│   ├── telegram_bot.py        # bot Telegram (descontinuado)
+    ├── chat.py                # agente no terminal
+│   └── whatsapp.py            # WhatsApp Business API
 │
 ├── scripts/                   # utilitários CLI
 │   └── seed.sql               # dados iniciais do Bernardo
@@ -205,7 +199,11 @@ manolo/
     └── fixtures/
         ├── laudo_teste.pdf
         └── audio_teste.m4a
-```
+        
+├── web/                       # Web App em Next.js (Fase 4)
+    ├── app/                   # páginas e rotas (App Router)
+    ├── components/            # componentes UI, Recharts, Tailwind
+    └── middleware.ts          # roteamento protegido via JWT
 
 ---
 
@@ -582,13 +580,12 @@ CREATE TABLE perfil_crianca (
    │   "Extraia os campos do checklist diário desse texto.
    │    Retorne JSON com os campos preenchidos e uma lista
    │    dos campos ausentes."
-   ├── Agente retorna JSON estruturado + campos faltantes
-   ├── Salva checklist no banco
-   └── Exibe no terminal:
-       "Registrado! Faltou: brincar e vestuário.
-        Como foi o brincar hoje?"
+   ├── Agente retorna JSON estruturado (sem perguntar por campos faltantes)
+   ├── Salva checklist no banco usando UPSERT (concatena novos dados aos existentes no dia)
+   └── Exibe no terminal/WhatsApp apenas uma confirmação leve:
+       "Anotado! ✅"
 
-3. Você responde → agente completa e salva.
+3. Se houverem novos relatos ao longo do dia, eles são enviados isoladamente e o banco se encarrega de acumular as informações (ex: arrays são concatenados via `array_cat`).
 ```
 
 ---
@@ -687,64 +684,41 @@ Especialidade (se terapeuta): {especialidade}
 
 ---
 
-## 7. Autenticação WhatsApp (Fase 3)
+## 7. Autenticação e Segurança (Fases 3 e 4.1)
 
-Autenticação por número de telefone. Gestão manual via banco.
+O sistema possui duas camadas de segurança distintas:
 
-```sql
--- Para liberar um novo usuário, inserir diretamente:
-INSERT INTO usuarios (account_id, nome, telefone_whatsapp, perfil)
-VALUES ('uuid-da-conta', 'Dra. Ana', '5511999999999', 'terapeuta');
+**WhatsApp (Fase 3):**
+Autenticação por número de telefone autorizado. A gestão é feita manualmente no banco via tabela `usuarios`. O webhook (`channels/main.py`) valida se o telefone recebido pertence a um usuário ativo antes de acionar o LangGraph.
 
--- Para revogar acesso:
-UPDATE usuarios SET ativo = FALSE WHERE telefone_whatsapp = '5511999999999';
-```
-
-Middleware de autenticação no webhook:
-
-```python
-# main.py
-def verificar_acesso(telefone: str) -> Usuario | None:
-    usuario = db.query(
-        "SELECT * FROM usuarios WHERE telefone_whatsapp = $1 AND ativo = TRUE",
-        telefone
-    )
-    return usuario  # None = acesso negado, não responde
-```
-
-**Evolução futura:** fluxo de solicitação de acesso via WhatsApp + aprovação pelo admin via bot ou Web App.
-
----
+**Web App (Fase 4.1):**
+Implementação de JWT via cookies para proteger a interface gráfica (`/dashboard/*`).
+- O `middleware.ts` no Next.js garante que páginas privadas só abram com cookie válido.
+- O backend REST (`channels/api.py` e `core/security.py`) emite o JWT, realiza hash de senhas (`bcrypt`) e gerencia endpoints de `/login` e `/logout`.
 
 ## 8. Roadmap de Funcionalidades
 
-### MVP (Fase 1 — local)
-- [ ] Docker Compose local com Postgres + pgvector
-- [ ] Script de ingestão de PDF
-- [ ] Script de ingestão de áudio (Whisper local)
-- [ ] Script de ingestão de vídeo
-- [ ] Agente via terminal (chat.py)
-- [ ] Atualização automática do perfil vivo
-- [ ] Seed com dados reais do Bernardo
+### MVP (Fase 1 — local) — [Concluído]
+- [x] Docker Compose local com Postgres + pgvector
+- [x] Script de ingestão de PDF, áudio e vídeo
+- [x] Agente via terminal e testes via Telegram
 
-### Fase 2 — Nuvem
-- [ ] Deploy do backend no Render/Railway
-- [ ] Banco no Supabase ou Neon
-- [ ] Storage no R2 ou Supabase Storage
-- [ ] Variáveis de ambiente em produção
+### Fase 2 — Nuvem — [Concluído]
+- [x] Deploy do backend no Render/Railway
+- [x] Banco no Supabase ou Neon
+- [x] Storage no R2 ou Supabase Storage
 
-### Fase 3 — WhatsApp
-- [ ] Webhook configurado na Meta for Developers
-- [ ] Checklist por voz
-- [ ] Checklist por vídeo curto
-- [ ] Consultas ao agente
-- [ ] Upload de PDF via WhatsApp
+### Fase 3 — WhatsApp + LangGraph — [Concluído]
+- [x] Webhook configurado na Meta for Developers
+- [x] Grafo simplificado (4 nós, UPSERT cumulativo, extração silenciosa)
+- [x] Roteamento de intenção e RAG temporal
+- [x] Consultas e relatórios sob demanda
 
-### Fase 4 — Web App
-- [ ] Dashboard de evolução temporal
-- [ ] Perfis de terapeuta com permissões
-- [ ] Cadastro de atividades
-- [ ] Fluxo de solicitação de acesso
+### Fase 4 e 4.1 — Web App e Segurança — [Concluído]
+- [x] Dashboard de evolução temporal (Next.js, Recharts)
+- [x] Autenticação JWT via cookies (middleware.ts)
+- [x] API REST para consumo do frontend
+- [x] Upload de PDFs
 
 ---
 
@@ -756,6 +730,15 @@ def verificar_acesso(telefone: str) -> Usuario | None:
 - Nenhum dado compartilhado entre contas
 - Vídeos e áudios armazenados em storage privado (sem URL pública)
 - Em produção: banco com SSL obrigatório, storage com acesso autenticado
+
+---
+
+## 9.1 Observabilidade (LangSmith)
+
+Todo o rastreamento das chamadas da OpenAI e fluxo de pensamento do LLM é registrado no LangSmith:
+- Utiliza-se o wrapper `wrap_openai` no cliente compartilhado (`core/clients.py`) para coletar traces finos diretamente das chamadas LLM.
+- Os nós do LangGraph e as funções de ingestão são decoradas com `@traceable(name="...")` para organizar o fluxo de execução.
+- Permite debugar alucinações, vazamentos de contexto temporal e latência de execução com precisão.
 
 ---
 

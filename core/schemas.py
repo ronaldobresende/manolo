@@ -36,24 +36,24 @@ class ComunicacaoModel(BaseModel):
     imitou: Optional[bool] = Field(None, description="Se imitou gestos ou sons dos outros")
 
 class BrincarModel(BaseModel):
-    com_que_brincou: Optional[List[str]] = Field(None, description="Brinquedos ou objetos utilizados para brincar")
-    modo: Optional[Literal['sozinho', 'com_adulto', 'misto']] = Field(None, description="Modo de interação durante a brincadeira")
-    fez_faz_de_conta: Optional[bool] = Field(None, description="Se fez brincadeira de faz-de-conta (jogo simbólico)")
-    tempo_sem_tela_minutos: Optional[int] = Field(None, description="Tempo que passou brincando ativamente sem telas")
+    com_que_brincou: Optional[List[str]] = Field(None, description="Quais brinquedos ou atividades (inclua o contexto se mencionado, ex: 'brincou de carrinho de manhã')")
+    modo: Optional[Literal['sozinho', 'com_adulto', 'misto']] = Field(None, description="Como brincou")
+    fez_faz_de_conta: Optional[bool] = Field(None, description="Se fez brincadeira de faz-de-conta")
+    tempo_sem_tela_minutos: Optional[int] = Field(None, description="Tempo estimado de brincadeira sem telas")
 
 class HigieneModel(BaseModel):
-    banho: Optional[Literal['tranquilo', 'resistencia', 'crise']] = Field(None, description="Como foi o momento do banho")
+    banho: Optional[Literal['tranquilo', 'resistencia', 'crise']] = Field(None, description="Como foi o banho")
     escovou_dentes: Optional[bool] = Field(None, description="Se escovou os dentes")
-    sinalizou_banheiro: Optional[bool] = Field(None, description="Se avisou que queria ir ao banheiro ou fez xixi/cocô corretamente")
+    sinalizou_banheiro: Optional[bool] = Field(None, description="Se pediu para ir ao banheiro ou usar o penico")
 
 class VestuarioModel(BaseModel):
-    colaborou_roupa: Optional[bool] = Field(None, description="Se colaborou/ajudou na hora de vestir a roupa")
-    incomodo_sensorial: Optional[bool] = Field(None, description="Se demonstrou incômodo com tecidos, texturas ou etiquetas")
+    colaborou_roupa: Optional[bool] = Field(None, description="Se ajudou ou deixou vestir a roupa tranquilamente")
+    incomodo_sensorial: Optional[bool] = Field(None, description="Se demonstrou incômodo com etiquetas, texturas ou sapatos")
 
 class MovimentoModel(BaseModel):
-    atividades: Optional[List[str]] = Field(None, description="Atividades físicas ou de movimento realizadas (ex: nadar, correr)")
-    caiu_muito: Optional[bool] = Field(None, description="Se caiu muito ou teve desequilíbrio")
-    buscou_colo: Optional[bool] = Field(None, description="Se buscou muito o colo do adulto ao longo do dia")
+    atividades: Optional[List[str]] = Field(None, description="Atividades físicas realizadas (ex: 'correu no parque à tarde')")
+    caiu_muito: Optional[bool] = Field(None, description="Se tropeçou ou caiu frequentemente")
+    buscou_colo: Optional[bool] = Field(None, description="Se pediu colo excessivamente")
 
 class HumorModel(BaseModel):
     humor_geral: Optional[Literal['muito_bom', 'bom', 'regular', 'agitado', 'difícil']] = Field(None, description="Estado de humor predominante no dia")
@@ -62,7 +62,7 @@ class HumorModel(BaseModel):
     notas: Optional[str] = Field(None, description="Notas extras ou relato subjetivo sobre o humor e comportamento")
 
 class RotinaModel(BaseModel):
-    guardou_brinquedos: Optional[bool] = Field(None, description="Se guardou os brinquedos ou colaborou na organização")
+    guardou_brinquedos: Optional[bool] = Field(None, description="Se ajudou a guardar os brinquedos")
     ajudou_tarefa: Optional[bool] = Field(None, description="Se participou ou ajudou em alguma tarefa da casa")
     aceitou_transicao: Optional[bool] = Field(None, description="Se aceitou de forma tranquila as transições entre atividades")
 

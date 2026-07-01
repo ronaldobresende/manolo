@@ -142,7 +142,12 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_sono (checklist_id, dormiu_as, acordou_as, acordou_noite, cochilo, notas)
             VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                dormiu_as = COALESCE(EXCLUDED.dormiu_as, checklist_sono.dormiu_as),
+                acordou_as = COALESCE(EXCLUDED.acordou_as, checklist_sono.acordou_as),
+                acordou_noite = COALESCE(EXCLUDED.acordou_noite, checklist_sono.acordou_noite),
+                cochilo = COALESCE(EXCLUDED.cochilo, checklist_sono.cochilo),
+                notas = COALESCE(EXCLUDED.notas, checklist_sono.notas)
         """, (checklist_id, s.get('dormiu_as'), s.get('acordou_as'), s.get('acordou_noite'), s.get('cochilo'), s.get('notas')))
 
     # TELA
@@ -151,7 +156,11 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_tela (checklist_id, usou_tela, tempo_minutos, conteudo, reacao_retirada)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                usou_tela = COALESCE(EXCLUDED.usou_tela, checklist_tela.usou_tela),
+                tempo_minutos = COALESCE(EXCLUDED.tempo_minutos, checklist_tela.tempo_minutos),
+                conteudo = COALESCE(EXCLUDED.conteudo, checklist_tela.conteudo),
+                reacao_retirada = COALESCE(EXCLUDED.reacao_retirada, checklist_tela.reacao_retirada)
         """, (checklist_id, t.get('usou_tela'), t.get('tempo_minutos'), t.get('conteudo'), t.get('reacao_retirada')))
 
     # ALIMENTACAO
@@ -160,7 +169,12 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_alimentacao (checklist_id, comeu_bem, aceitou, recusou, comeu_sentado, utensilio)
             VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                comeu_bem = COALESCE(EXCLUDED.comeu_bem, checklist_alimentacao.comeu_bem),
+                aceitou = array_cat(COALESCE(checklist_alimentacao.aceitou, ARRAY[]::TEXT[]), COALESCE(EXCLUDED.aceitou, ARRAY[]::TEXT[])),
+                recusou = array_cat(COALESCE(checklist_alimentacao.recusou, ARRAY[]::TEXT[]), COALESCE(EXCLUDED.recusou, ARRAY[]::TEXT[])),
+                comeu_sentado = COALESCE(EXCLUDED.comeu_sentado, checklist_alimentacao.comeu_sentado),
+                utensilio = COALESCE(EXCLUDED.utensilio, checklist_alimentacao.utensilio)
         """, (checklist_id, a.get('comeu_bem'), a.get('aceitou'), a.get('recusou'), a.get('comeu_sentado'), a.get('utensilio')))
 
     # COMUNICACAO
@@ -169,7 +183,13 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_comunicacao (checklist_id, usou_gestos, palavras_ditas, apontou, puxou_mao, respondeu_nome, imitou)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                usou_gestos = COALESCE(EXCLUDED.usou_gestos, checklist_comunicacao.usou_gestos),
+                palavras_ditas = array_cat(COALESCE(checklist_comunicacao.palavras_ditas, ARRAY[]::TEXT[]), COALESCE(EXCLUDED.palavras_ditas, ARRAY[]::TEXT[])),
+                apontou = COALESCE(EXCLUDED.apontou, checklist_comunicacao.apontou),
+                puxou_mao = COALESCE(EXCLUDED.puxou_mao, checklist_comunicacao.puxou_mao),
+                respondeu_nome = COALESCE(EXCLUDED.respondeu_nome, checklist_comunicacao.respondeu_nome),
+                imitou = COALESCE(EXCLUDED.imitou, checklist_comunicacao.imitou)
         """, (checklist_id, c.get('usou_gestos'), c.get('palavras_ditas'), c.get('apontou'), c.get('puxou_mao'), c.get('respondeu_nome'), c.get('imitou')))
 
     # BRINCAR
@@ -178,7 +198,11 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_brincar (checklist_id, com_que_brincou, modo, fez_faz_de_conta, tempo_sem_tela_minutos)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                com_que_brincou = array_cat(COALESCE(checklist_brincar.com_que_brincou, ARRAY[]::TEXT[]), COALESCE(EXCLUDED.com_que_brincou, ARRAY[]::TEXT[])),
+                modo = COALESCE(EXCLUDED.modo, checklist_brincar.modo),
+                fez_faz_de_conta = COALESCE(EXCLUDED.fez_faz_de_conta, checklist_brincar.fez_faz_de_conta),
+                tempo_sem_tela_minutos = COALESCE(EXCLUDED.tempo_sem_tela_minutos, checklist_brincar.tempo_sem_tela_minutos)
         """, (checklist_id, b.get('com_que_brincou'), b.get('modo'), b.get('fez_faz_de_conta'), b.get('tempo_sem_tela_minutos')))
 
     # HIGIENE
@@ -187,7 +211,10 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_higiene (checklist_id, banho, escovou_dentes, sinalizou_banheiro)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                banho = COALESCE(EXCLUDED.banho, checklist_higiene.banho),
+                escovou_dentes = COALESCE(EXCLUDED.escovou_dentes, checklist_higiene.escovou_dentes),
+                sinalizou_banheiro = COALESCE(EXCLUDED.sinalizou_banheiro, checklist_higiene.sinalizou_banheiro)
         """, (checklist_id, h.get('banho'), h.get('escovou_dentes'), h.get('sinalizou_banheiro')))
 
     # VESTUARIO
@@ -196,7 +223,9 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_vestuario (checklist_id, colaborou_roupa, incomodo_sensorial)
             VALUES (%s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                colaborou_roupa = COALESCE(EXCLUDED.colaborou_roupa, checklist_vestuario.colaborou_roupa),
+                incomodo_sensorial = COALESCE(EXCLUDED.incomodo_sensorial, checklist_vestuario.incomodo_sensorial)
         """, (checklist_id, v.get('colaborou_roupa'), v.get('incomodo_sensorial')))
 
     # MOVIMENTO
@@ -205,7 +234,10 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_movimento (checklist_id, atividades, caiu_muito, buscou_colo)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                atividades = array_cat(COALESCE(checklist_movimento.atividades, ARRAY[]::TEXT[]), COALESCE(EXCLUDED.atividades, ARRAY[]::TEXT[])),
+                caiu_muito = COALESCE(EXCLUDED.caiu_muito, checklist_movimento.caiu_muito),
+                buscou_colo = COALESCE(EXCLUDED.buscou_colo, checklist_movimento.buscou_colo)
         """, (checklist_id, m.get('atividades'), m.get('caiu_muito'), m.get('buscou_colo')))
 
     # HUMOR
@@ -214,7 +246,11 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_humor (checklist_id, humor_geral, teve_crise, o_que_acalmou, notas)
             VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                humor_geral = COALESCE(EXCLUDED.humor_geral, checklist_humor.humor_geral),
+                teve_crise = COALESCE(EXCLUDED.teve_crise, checklist_humor.teve_crise),
+                o_que_acalmou = COALESCE(EXCLUDED.o_que_acalmou, checklist_humor.o_que_acalmou),
+                notas = COALESCE(EXCLUDED.notas, checklist_humor.notas)
         """, (checklist_id, h.get('humor_geral'), h.get('teve_crise'), h.get('o_que_acalmou'), h.get('notas')))
 
     # ROTINA
@@ -223,7 +259,10 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
         cur.execute("""
             INSERT INTO checklist_rotina (checklist_id, guardou_brinquedos, ajudou_tarefa, aceitou_transicao)
             VALUES (%s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO NOTHING
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                guardou_brinquedos = COALESCE(EXCLUDED.guardou_brinquedos, checklist_rotina.guardou_brinquedos),
+                ajudou_tarefa = COALESCE(EXCLUDED.ajudou_tarefa, checklist_rotina.ajudou_tarefa),
+                aceitou_transicao = COALESCE(EXCLUDED.aceitou_transicao, checklist_rotina.aceitou_transicao)
         """, (checklist_id, r.get('guardou_brinquedos'), r.get('ajudou_tarefa'), r.get('aceitou_transicao')))
 
 
