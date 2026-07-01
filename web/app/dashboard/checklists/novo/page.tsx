@@ -52,7 +52,13 @@ function getSectionStatus(section: string, form: typeof DEFAULT_STATE, loadedSec
       isComplete = !!data.modo
       break
     case 'higiene':
-      isComplete = !!data.banho
+      isComplete = !!(
+        data?.banho || data?.escovou_dentes || data?.sinalizou_banheiro ||
+        form.vestuario?.colaborou_roupa || form.vestuario?.incomodo_sensorial ||
+        form.rotina?.guardou_brinquedos || form.rotina?.ajudou_tarefa || form.rotina?.aceitou_transicao ||
+        (form.movimento?.atividades && form.movimento.atividades.length > 0) ||
+        form.observacoes?.conquistas || form.observacoes?.dificuldades || form.observacoes?.diferente_hoje
+      )
       break
     case 'humor':
       isComplete = !!data.humor_geral
