@@ -22,23 +22,23 @@ class TelaModel(BaseModel):
 
 class AlimentacaoModel(BaseModel):
     comeu_bem: Optional[bool] = Field(None, description="Se a criança comeu bem nas refeições")
-    aceitou: Optional[List[str]] = Field(None, description="Quais alimentos foram aceitos")
-    recusou: Optional[List[str]] = Field(None, description="Quais alimentos foram recusados")
+    aceitou: Optional[List[str]] = Field(None, description="Quais alimentos foram aceitos. Inclua explicitamente mamadeiras, líquidos, água, lanches e qualquer refeição. Inclua o horário se mencionado (ex: 'mamadeira às 15:00', 'maçã de manhã').")
+    recusou: Optional[List[str]] = Field(None, description="Quais alimentos foram recusados (ex: 'recusou arroz no almoço')")
     comeu_sentado: Optional[bool] = Field(None, description="Se comeu sentado à mesa ou cadeirão")
     utensilio: Optional[Literal['colher', 'garfo', 'mao', 'misto']] = Field(None, description="Qual utensílio usou para comer")
 
 class ComunicacaoModel(BaseModel):
     usou_gestos: Optional[bool] = Field(None, description="Se usou gestos para se comunicar")
-    palavras_ditas: Optional[List[str]] = Field(None, description="Lista de palavras ditas no dia")
+    palavras_ditas: Optional[List[str]] = Field(None, description="Lista de palavras ditas no dia. Sons com intenção de fala e aproximações (ex: 'dadada', 'keka', 'doog') TAMBÉM contam como palavras.")
     apontou: Optional[bool] = Field(None, description="Se apontou para os objetos desejados")
     puxou_mao: Optional[Literal['nunca', 'às_vezes', 'maioria', 'sempre']] = Field(None, description="Frequência com que puxou a mão de um adulto")
     respondeu_nome: Optional[Literal['nunca', 'às_vezes', 'sempre']] = Field(None, description="Se respondeu/atendeu ao ser chamada pelo nome")
     imitou: Optional[bool] = Field(None, description="Se imitou gestos ou sons dos outros")
 
 class BrincarModel(BaseModel):
-    com_que_brincou: Optional[List[str]] = Field(None, description="Quais brinquedos ou atividades (inclua o contexto se mencionado, ex: 'brincou de carrinho de manhã')")
+    com_que_brincou: Optional[List[str]] = Field(None, description="Quais brinquedos ou atividades. Inclua o contexto se mencionado (ex: 'brincou de carrinho de manhã', 'brincou na areia').")
     modo: Optional[Literal['sozinho', 'com_adulto', 'misto']] = Field(None, description="Como brincou")
-    fez_faz_de_conta: Optional[bool] = Field(None, description="Se fez brincadeira de faz-de-conta")
+    fez_faz_de_conta: Optional[bool] = Field(None, description="Se fez brincadeira de faz-de-conta ou simbólica (ex: fazer casquinha, comidinha, imitar adultos ou situações reais)")
     tempo_sem_tela_minutos: Optional[int] = Field(None, description="Tempo estimado de brincadeira sem telas")
 
 class HigieneModel(BaseModel):
@@ -51,7 +51,7 @@ class VestuarioModel(BaseModel):
     incomodo_sensorial: Optional[bool] = Field(None, description="Se demonstrou incômodo com etiquetas, texturas ou sapatos")
 
 class MovimentoModel(BaseModel):
-    atividades: Optional[List[str]] = Field(None, description="Atividades físicas realizadas (ex: 'correu no parque à tarde')")
+    atividades: Optional[List[str]] = Field(None, description="Atividades físicas ou interações motoras com o ambiente (ex: 'correu no parque à tarde', 'subiu e desceu do sofá', 'pular')")
     caiu_muito: Optional[bool] = Field(None, description="Se tropeçou ou caiu frequentemente")
     buscou_colo: Optional[bool] = Field(None, description="Se pediu colo excessivamente")
 
@@ -66,6 +66,11 @@ class RotinaModel(BaseModel):
     ajudou_tarefa: Optional[bool] = Field(None, description="Se participou ou ajudou em alguma tarefa da casa")
     aceitou_transicao: Optional[bool] = Field(None, description="Se aceitou de forma tranquila as transições entre atividades")
 
+class ObservacoesModel(BaseModel):
+    conquistas: Optional[str] = Field(None, description="Avanços de autonomia, iniciativa funcional, marcos ou comportamentos positivos (ex: 'foi na bolsa e pegou chocolate sozinho'). NÃO coloque aqui o que ele comeu ou brincou se couber nos campos específicos.")
+    dificuldades: Optional[str] = Field(None, description="Desafios, frustrações ou birras que não couberam nos campos específicos.")
+    diferente_hoje: Optional[str] = Field(None, description="Qualquer outra observação qualitativa ou contextual.")
+
 class CamposPreenchidos(BaseModel):
     sono: Optional[SonoModel] = None
     humor: Optional[HumorModel] = None
@@ -77,6 +82,7 @@ class CamposPreenchidos(BaseModel):
     vestuario: Optional[VestuarioModel] = None
     tela: Optional[TelaModel] = None
     rotina: Optional[RotinaModel] = None
+    observacoes: Optional[ObservacoesModel] = None
 
 class RelatoDiario(BaseModel):
     data_referencia_iso: Optional[str] = Field(None, description="Data à qual o relato se refere, no formato YYYY-MM-DD. NUNCA infira 'ontem' ou outras datas. Se o usuário NÃO disser a data (ex: 'ele dormiu mal'), retorne null para que o sistema assuma HOJE.")

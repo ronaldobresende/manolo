@@ -265,6 +265,18 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
                 aceitou_transicao = COALESCE(EXCLUDED.aceitou_transicao, checklist_rotina.aceitou_transicao)
         """, (checklist_id, r.get('guardou_brinquedos'), r.get('ajudou_tarefa'), r.get('aceitou_transicao')))
 
+    # OBSERVACOES
+    if "observacoes" in campos and campos["observacoes"]:
+        o = campos["observacoes"]
+        cur.execute("""
+            INSERT INTO checklist_observacoes (checklist_id, conquistas, dificuldades, diferente_hoje)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (checklist_id) DO UPDATE SET
+                conquistas = NULLIF(CONCAT_WS('\n', NULLIF(checklist_observacoes.conquistas, ''), NULLIF(EXCLUDED.conquistas, '')), ''),
+                dificuldades = NULLIF(CONCAT_WS('\n', NULLIF(checklist_observacoes.dificuldades, ''), NULLIF(EXCLUDED.dificuldades, '')), ''),
+                diferente_hoje = NULLIF(CONCAT_WS('\n', NULLIF(checklist_observacoes.diferente_hoje, ''), NULLIF(EXCLUDED.diferente_hoje, '')), '')
+        """, (checklist_id, o.get('conquistas'), o.get('dificuldades'), o.get('diferente_hoje')))
+
 
 def buscar_campos_ausentes(crianca_id: str, data_ref: str = None) -> list[str]:
     """

@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # Configurações do modelo de embedding
     EMBEDDING_MODEL: str = "text-embedding-3-small"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore')
 
 # Instância única que será importada por toda a aplicação
 settings = Settings()
