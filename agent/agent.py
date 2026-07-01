@@ -313,7 +313,29 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     logger.info(f"[RELATÓRIO] Gerando checklist para data: {data_alvo}")
     resumo_formatado = formatar_resumo_diario(crianca_id, data_alvo)
 
-    return {"resposta": resumo_formatado}
+    # Pegamos a string do resumo formatado, jogamos no LLM e pedimos a "historinha calorosa"
+    client = get_openai_client()
+    nome_usuario = state.get("nome_usuario", "Família")
+    perfil_usuario = state.get("perfil_usuario", "família")
+    prompt_sistema = construir_prompt_sistema(crianca_id, perfil_usuario, nome_usuario)
+    prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva até dois parágrafos bem calorosos e empáticos para a família resumindo como foi o dia da criança.\n\n{resumo_formatado}"
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": prompt_usuario}
+            ],
+            temperature=0.5
+        )
+        historinha = response.choices[0].message.content.strip()
+        resposta_final = f"{historinha}\n\n---\n\n{resumo_formatado}"
+    except Exception as e:
+        logger.error(f"[RELATÓRIO] Erro ao gerar historinha: {e}")
+        resposta_final = resumo_formatado
+
+    return {"resposta": resposta_final}
 
 
 # ============================================================
