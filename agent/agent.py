@@ -295,20 +295,28 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     crianca_id = state["crianca_id"]
     mensagem = state["mensagem"]
 
-    # Tenta extrair data ISO (YYYY-MM-DD) diretamente da mensagem
-    data_alvo = None
-    match_iso = re.search(r'(\d{4}-\d{2}-\d{2})', mensagem)
-    if match_iso:
-        data_alvo = match_iso.group(1)
-    else:
-        # Tenta formato brasileiro DD/MM/YYYY
-        match_br = re.search(r'(\d{2})/(\d{2})/(\d{4})', mensagem)
-        if match_br:
-            data_alvo = f"{match_br.group(3)}-{match_br.group(2)}-{match_br.group(1)}"
+    hoje = _obter_data_hoje()
+    client = get_openai_client()
 
-    # Fallback: usa data_contexto do state ou hoje
-    if not data_alvo:
-        data_alvo = state.get("data_contexto") or _obter_data_hoje()
+    # Usa o LLM para interpretar datas relativas ("ontem", "anteontem") ou absolutas
+    try:
+        resp_data = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": f"A data de hoje é {hoje}. O usuário está pedindo um relatório. Extraia a qual data ele se refere na mensagem. Responda APENAS com a data no formato YYYY-MM-DD. Se ele não mencionar nenhuma data, responda HOJE."},
+                {"role": "user", "content": mensagem}
+            ],
+            temperature=0
+        )
+        data_extraida = resp_data.choices[0].message.content.strip()
+        
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', data_extraida):
+            data_alvo = data_extraida
+        else:
+            data_alvo = state.get("data_contexto") or hoje
+    except Exception as e:
+        logger.error(f"[RELATÓRIO] Erro ao extrair data com LLM: {e}")
+        data_alvo = state.get("data_contexto") or hoje
 
     logger.info(f"[RELATÓRIO] Gerando checklist para data: {data_alvo}")
     resumo_formatado = formatar_resumo_diario(crianca_id, data_alvo)
