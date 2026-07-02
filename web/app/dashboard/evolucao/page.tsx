@@ -46,6 +46,15 @@ function calcularHorasSono(c: ChecklistResumo): number | null {
   return Math.round(diff * 10) / 10
 }
 
+function calcularHorasCochilo(c: ChecklistResumo): number | null {
+  if (!c.cochilo_inicio || !c.cochilo_fim) return null
+  const inicio = horaParaDecimal(c.cochilo_inicio)
+  const fim = horaParaDecimal(c.cochilo_fim)
+  if (inicio === null || fim === null) return null
+  const diff = fim < inicio ? fim + 24 - inicio : fim - inicio
+  return Math.round(diff * 10) / 10
+}
+
 // ============================================================
 // GRÁFICO BASE
 // ============================================================
@@ -164,6 +173,7 @@ export default function EvolucaoPage() {
     dados.map(c => ({
       data: formatData(c.data),
       'Horas de sono': calcularHorasSono(c),
+      'Tempo de cochilo': calcularHorasCochilo(c),
       'Dormiu às': horaParaDecimalContinuo(c.dormiu_as),
       'Acordou à noite': c.acordou_noite ? 1 : 0,
     })),
@@ -245,6 +255,7 @@ export default function EvolucaoPage() {
             dados={dadosSono}
             linhas={[
               { dataKey: 'Horas de sono', nome: 'Horas de sono', cor: '#2D6A4F' },
+              { dataKey: 'Tempo de cochilo', nome: 'Cochilo (horas)', cor: '#FFB703' },
               { dataKey: 'Acordou à noite', nome: 'Acordou à noite (0/1)', cor: '#7C8C99' },
             ]}
             yLabel="horas"

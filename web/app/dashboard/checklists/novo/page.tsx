@@ -16,7 +16,7 @@ import {
 const DEFAULT_STATE = {
   data: new Date().toISOString().split('T')[0],
   resumo_dia: '',
-  sono: { dormiu_as: '', acordou_as: '', acordou_noite: false, cochilo: false, notas: '' },
+  sono: { dormiu_as: '', acordou_as: '', acordou_noite: false, cochilo_inicio: '', cochilo_fim: '', notas: '' },
   tela: { usou_tela: false, tempo_minutos: 0, conteudo: '', reacao_retirada: '' },
   alimentacao: { comeu_bem: false, aceitou: [], recusou: [], comeu_sentado: false, utensilio: '' },
   comunicacao: { usou_gestos: false, palavras_ditas: [], apontou: false, puxou_mao: '', respondeu_nome: '', imitou: false },
@@ -248,9 +248,18 @@ function ChecklistNovoContent() {
               <input type="time" className="input" value={form.sono.acordou_as || ''} onChange={e => updateSection('sono', 'acordou_as', e.target.value)} />
             </div>
           </div>
-          <div className="flex gap-6">
+          <div className="flex gap-6 mb-4">
             <Toggle label="Acordou na noite?" checked={form.sono.acordou_noite} onChange={v => updateSection('sono', 'acordou_noite', v)} />
-            <Toggle label="Tirou cochilo?" checked={form.sono.cochilo} onChange={v => updateSection('sono', 'cochilo', v)} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Início Cochilo</label>
+              <input type="time" className="input" value={(form.sono as any).cochilo_inicio || ''} onChange={e => updateSection('sono', 'cochilo_inicio', e.target.value)} />
+            </div>
+            <div>
+              <label className="label">Fim Cochilo</label>
+              <input type="time" className="input" value={(form.sono as any).cochilo_fim || ''} onChange={e => updateSection('sono', 'cochilo_fim', e.target.value)} />
+            </div>
           </div>
           <div>
             <label className="label">Notas sobre o sono</label>

@@ -69,7 +69,7 @@ def buscar_contexto_checklists(crianca_id: str, limite_dias: int = 7) -> str:
                         c.id as checklist_id,
                         c.data,
                         -- Sono
-                        cs.dormiu_as, cs.acordou_as, cs.acordou_noite, cs.cochilo, cs.notas as sono_notas,
+                        cs.dormiu_as, cs.acordou_as, cs.acordou_noite, cs.cochilo_inicio, cs.cochilo_fim, cs.notas as sono_notas,
                         -- Humor
                         ch.humor_geral, ch.teve_crise, ch.o_que_acalmou, ch.notas as humor_notas,
                         -- Alimentação
@@ -119,7 +119,8 @@ def buscar_contexto_checklists(crianca_id: str, limite_dias: int = 7) -> str:
             partes_sono = []
             if row.get('dormiu_as'): partes_sono.append(f"dormiu às {row['dormiu_as']}")
             if row.get('acordou_as'): partes_sono.append(f"acordou às {row['acordou_as']}")
-            if row.get('cochilo') is True: partes_sono.append("cochilou durante o dia")
+            if row.get('cochilo_inicio') or row.get('cochilo_fim'): 
+                partes_sono.append(f"cochilou das {row.get('cochilo_inicio') or '?'} às {row.get('cochilo_fim') or '?'}")
             if row.get('acordou_noite') is True: partes_sono.append("acordou à noite")
             if row.get('sono_notas'): partes_sono.append(row['sono_notas'])
             if partes_sono:

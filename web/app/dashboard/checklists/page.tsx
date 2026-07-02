@@ -109,7 +109,8 @@ function ModalChecklist({ data, criancaId, onClose }: {
                   <CampoSec label="Dormiu às" val={detalhe.secoes.sono.dormiu_as} />
                   <CampoSec label="Acordou às" val={detalhe.secoes.sono.acordou_as} />
                   <CampoSec label="Acordou à noite" val={detalhe.secoes.sono.acordou_noite} />
-                  <CampoSec label="Cochilo" val={detalhe.secoes.sono.cochilo} />
+                  <CampoSec label="Cochilo (Início)" val={detalhe.secoes.sono.cochilo_inicio} />
+                  <CampoSec label="Cochilo (Fim)" val={detalhe.secoes.sono.cochilo_fim} />
                   <CampoSec label="Notas" val={detalhe.secoes.sono.notas} />
                 </Secao>
               )}

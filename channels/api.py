@@ -154,6 +154,8 @@ async def listar_checklists(
             cs.dormiu_as,
             cs.acordou_as,
             cs.acordou_noite,
+            cs.cochilo_inicio,
+            cs.cochilo_fim,
             -- Tela
             ct.usou_tela,
             ct.tempo_minutos AS tempo_tela_minutos,

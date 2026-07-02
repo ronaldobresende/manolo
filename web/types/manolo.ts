@@ -92,6 +92,8 @@ export interface ChecklistResumo {
   dormiu_as?: string
   acordou_as?: string
   acordou_noite?: boolean
+  cochilo_inicio?: string
+  cochilo_fim?: string
   humor_geral?: string
   teve_crise?: boolean
   palavras_ditas?: string[]
@@ -109,7 +111,8 @@ export interface SecaoSono {
   dormiu_as?: string
   acordou_as?: string
   acordou_noite?: boolean
-  cochilo?: boolean
+  cochilo_inicio?: string
+  cochilo_fim?: string
   notas?: string
 }
 

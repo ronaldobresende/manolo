@@ -5,7 +5,8 @@ class ChecklistSono(BaseModel):
     dormiu_as: Optional[str] = None
     acordou_as: Optional[str] = None
     acordou_noite: Optional[bool] = None
-    cochilo: Optional[bool] = None
+    cochilo_inicio: Optional[str] = None
+    cochilo_fim: Optional[str] = None
     notas: Optional[str] = None
 
 class ChecklistTela(BaseModel):
