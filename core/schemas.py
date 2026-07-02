@@ -11,7 +11,8 @@ class SonoModel(BaseModel):
     dormiu_as: Optional[str] = Field(None, description="Horário aproximado em que dormiu (formato HH:MM)")
     acordou_as: Optional[str] = Field(None, description="Horário aproximado em que acordou (formato HH:MM)")
     acordou_noite: Optional[bool] = Field(None, description="Indica se a criança acordou durante a noite")
-    cochilo: Optional[bool] = Field(None, description="Se fez cochilos durante o dia")
+    cochilo_inicio: Optional[str] = Field(None, description="Horário aproximado em que iniciou o cochilo da tarde (formato HH:MM)")
+    cochilo_fim: Optional[str] = Field(None, description="Horário aproximado em que acordou do cochilo da tarde (formato HH:MM)")
     notas: Optional[str] = Field(None, description="Notas adicionais ou observações livres sobre o sono e rotina noturna")
 
 class TelaModel(BaseModel):

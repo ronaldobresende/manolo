@@ -134,21 +134,21 @@ def salvar_campo_individual(checklist_id: str, campo: str, dados: dict):
 def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
     """Lógica unificada para inserir ou atualizar campos tipados do Pydantic no banco."""
     
-    # Utilitário removido pois não vamos mais concatenar notas (DO NOTHING puro)
-
     # SONO
     if "sono" in campos and campos["sono"]:
-        s = campos["sono"]
-        cur.execute("""
-            INSERT INTO checklist_sono (checklist_id, dormiu_as, acordou_as, acordou_noite, cochilo, notas)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            ON CONFLICT (checklist_id) DO UPDATE SET
-                dormiu_as = COALESCE(EXCLUDED.dormiu_as, checklist_sono.dormiu_as),
-                acordou_as = COALESCE(EXCLUDED.acordou_as, checklist_sono.acordou_as),
-                acordou_noite = COALESCE(EXCLUDED.acordou_noite, checklist_sono.acordou_noite),
-                cochilo = COALESCE(EXCLUDED.cochilo, checklist_sono.cochilo),
-                notas = COALESCE(EXCLUDED.notas, checklist_sono.notas)
-        """, (checklist_id, s.get('dormiu_as'), s.get('acordou_as'), s.get('acordou_noite'), s.get('cochilo'), s.get('notas')))
+        o = campos.get('sono')
+        if o is not None:
+            cur.execute("""
+                INSERT INTO checklist_sono (checklist_id, dormiu_as, acordou_as, acordou_noite, cochilo_inicio, cochilo_fim, notas)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (checklist_id) DO UPDATE SET 
+                    dormiu_as = COALESCE(EXCLUDED.dormiu_as, checklist_sono.dormiu_as),
+                    acordou_as = COALESCE(EXCLUDED.acordou_as, checklist_sono.acordou_as),
+                    acordou_noite = COALESCE(EXCLUDED.acordou_noite, checklist_sono.acordou_noite),
+                    cochilo_inicio = COALESCE(EXCLUDED.cochilo_inicio, checklist_sono.cochilo_inicio),
+                    cochilo_fim = COALESCE(EXCLUDED.cochilo_fim, checklist_sono.cochilo_fim),
+                    notas = COALESCE(EXCLUDED.notas, checklist_sono.notas)
+            """, (checklist_id, o.get('dormiu_as'), o.get('acordou_as'), o.get('acordou_noite'), o.get('cochilo_inicio'), o.get('cochilo_fim'), o.get('notas')))
 
     # TELA
     if "tela" in campos and campos["tela"]:
@@ -494,15 +494,25 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
 
                 def formata_rotina(r):
                     partes = []
-                    if r.get('guardou_brinquedos'): partes.append("guardou brinquedos")
-                    if r.get('ajudou_tarefa'): partes.append("ajudou em tarefas")
+                    if r.get('teve_terapia') is not None:
+                        partes.append(f"terapia: {'sim' if r.get('teve_terapia') else 'não'}")
+                    if r.get('teve_escola') is not None:
+                        partes.append(f"escola: {'sim' if r.get('teve_escola') else 'não'}")
                     if r.get('aceitou_transicao') is not None:
                         partes.append("aceitou transições" if r.get('aceitou_transicao') else "resistiu a transições")
                     return " | ".join(partes) if partes else "sem detalhes"
 
+                def formata_sono(r):
+                    base = f"dormiu às {format_time(r.get('dormiu_as'))}, acordou às {format_time(r.get('acordou_as'))}"
+                    if r.get('acordou_noite'):
+                        base += " | acordou na noite"
+                    if r.get('cochilo_inicio') or r.get('cochilo_fim'):
+                        base += f" | cochilou ({format_time(r.get('cochilo_inicio'))} - {format_time(r.get('cochilo_fim'))})"
+                    return base
+
                 # Campos na ordem pedida
                 campos = [
-                    ("sono", "checklist_sono", "Sono", lambda r: f"dormiu às {format_time(r.get('dormiu_as'))}, acordou às {format_time(r.get('acordou_as'))}{' | acordou na noite' if r.get('acordou_noite') else ''}{' | teve cochilo' if r.get('cochilo') else ''}"),
+                    ("sono", "checklist_sono", "Sono", formata_sono),
                     ("alimentacao", "checklist_alimentacao", "Alimentação", formata_alimentacao),
                     ("tela", "checklist_tela", "Tela", lambda r: f"usou por {format_duration(r.get('tempo_minutos'))}{(' (' + r.get('conteudo') + ')') if r.get('conteudo') else ''}" if r.get('usou_tela') else "não usou telas hoje! 🎉"),
                     ("comunicacao", "checklist_comunicacao", "Comunicação", formata_comunicacao),

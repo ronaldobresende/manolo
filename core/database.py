@@ -203,7 +203,8 @@ def init_db():
           dormiu_as TIME,
           acordou_as TIME,
           acordou_noite BOOLEAN,
-          cochilo BOOLEAN,
+          cochilo_inicio TIME,
+          cochilo_fim TIME,
           notas TEXT
         );
         """,
