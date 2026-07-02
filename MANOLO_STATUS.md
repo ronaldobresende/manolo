@@ -102,6 +102,7 @@ Agente usado: Claude Opus 4.6
 > 1. Testes em produção do grafo simplificado (extração silenciosa, relatório sob demanda, sem cobranças) no WhatsApp Business.
 > 2. Integração definitiva da KB Denver (`core/kb/`) no `profile.py` para enriquecer a terminologia clínica do Perfil Vivo.
 > 3. **Migração do MemorySaver** para checkpoint persistente no Neon (`langgraph-checkpoint-postgres`) para não perder `data_contexto` a cada restart.
+> 4. **Evolução para Agentic RAG**: Dar autonomia ao nó de RAG usando "Tool Calling" (`bind_tools`) para que o LLM escolha quais dados e janelas de tempo consultar no banco de dados, em vez do SQL fixo atual de 15 dias.
 ---
 
 ## Histórico de sessões

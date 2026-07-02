@@ -33,32 +33,23 @@ export interface Usuario {
 // ============================================================
 
 export interface PerfilComunicacao {
-  gestos?: string
-  palavras_ativas?: string[]
-  combinacao_gesto_palavra?: boolean
-  puxar_mao?: string
-  respondeu_nome?: string
+  [key: string]: string | string[] | boolean | undefined | number
 }
 
 export interface PerfilMotor {
-  grosso?: string
-  fino?: string
+  [key: string]: string | string[] | boolean | undefined | number
 }
 
 export interface PerfilAlimentacao {
-  aceita_bem?: string[]
-  recusa_frequente?: string[]
-  utensilio?: string
+  [key: string]: string | string[] | boolean | undefined | number
 }
 
 export interface PerfilSono {
-  media_horas?: number
-  acorda_noite?: string
+  [key: string]: string | string[] | boolean | undefined | number
 }
 
 export interface PerfilRegulacao {
-  gatilhos_crise?: string[]
-  o_que_acalma?: string[]
+  [key: string]: string | string[] | boolean | undefined | number
 }
 
 export interface PerfilVivo {

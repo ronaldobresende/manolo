@@ -59,6 +59,11 @@ function AtualizadoEm({ data }: { data: string }) {
   )
 }
 
+function formatKey(key: string): string {
+  const spaced = key.replace(/_/g, ' ')
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
+}
+
 // ============================================================
 // SKELETON
 // ============================================================
@@ -140,32 +145,33 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
 
             <DomainCard titulo="Comunicação" emoji="💬" cor="border-primary">
-              <Campo label="Gestos" valor={perfil.comunicacao?.gestos} />
-              <Campo label="Palavras ativas" valor={perfil.comunicacao?.palavras_ativas} />
-              <Campo label="Gesto + palavra" valor={perfil.comunicacao?.combinacao_gesto_palavra} />
-              <Campo label="Puxar mão" valor={perfil.comunicacao?.puxar_mao} />
-              <Campo label="Responde o nome" valor={perfil.comunicacao?.respondeu_nome} />
+              {perfil.comunicacao && Object.entries(perfil.comunicacao).map(([k, v]) => (
+                <Campo key={k} label={formatKey(k)} valor={v as any} />
+              ))}
             </DomainCard>
 
             <DomainCard titulo="Motor" emoji="🤸" cor="border-accent">
-              <Campo label="Motor grosso" valor={perfil.motor?.grosso} />
-              <Campo label="Motor fino" valor={perfil.motor?.fino} />
+              {perfil.motor && Object.entries(perfil.motor).map(([k, v]) => (
+                <Campo key={k} label={formatKey(k)} valor={v as any} />
+              ))}
             </DomainCard>
 
             <DomainCard titulo="Alimentação" emoji="🍽️" cor="border-amber-400">
-              <Campo label="Aceita bem" valor={perfil.alimentacao?.aceita_bem} />
-              <Campo label="Recusa" valor={perfil.alimentacao?.recusa_frequente} />
-              <Campo label="Utensílio" valor={perfil.alimentacao?.utensilio} />
+              {perfil.alimentacao && Object.entries(perfil.alimentacao).map(([k, v]) => (
+                <Campo key={k} label={formatKey(k)} valor={v as any} />
+              ))}
             </DomainCard>
 
             <DomainCard titulo="Sono" emoji="🌙" cor="border-indigo-400">
-              <Campo label="Média de horas" valor={perfil.sono?.media_horas ? `${perfil.sono.media_horas}h` : undefined} />
-              <Campo label="Acorda à noite" valor={perfil.sono?.acorda_noite} />
+              {perfil.sono && Object.entries(perfil.sono).map(([k, v]) => (
+                <Campo key={k} label={formatKey(k)} valor={v as any} />
+              ))}
             </DomainCard>
 
             <DomainCard titulo="Regulação" emoji="🧘" cor="border-rose-400">
-              <Campo label="Gatilhos de crise" valor={perfil.regulacao?.gatilhos_crise} />
-              <Campo label="O que acalma" valor={perfil.regulacao?.o_que_acalma} />
+              {perfil.regulacao && Object.entries(perfil.regulacao).map(([k, v]) => (
+                <Campo key={k} label={formatKey(k)} valor={v as any} />
+              ))}
             </DomainCard>
           </div>
 
