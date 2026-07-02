@@ -8,6 +8,10 @@ logger = logging.getLogger(__name__)
 
 def enviar_mensagem(texto: str, telefone_destino: str):
     """Envia uma mensagem de texto via WhatsApp API."""
+    if not texto or not str(texto).strip():
+        logger.info(f"Envio cancelado: Tentativa de enviar mensagem vazia para {telefone_destino}.")
+        return False
+        
     if not settings.WHATSAPP_TOKEN or not settings.WHATSAPP_PHONE_ID:
         logger.error("Credenciais do WhatsApp não configuradas no .env")
         return False
@@ -44,6 +48,10 @@ def enviar_mensagem(texto: str, telefone_destino: str):
 
 async def enviar_mensagem_async(texto: str, telefone_destino: str):
     """Envia uma mensagem de texto de forma assíncrona via WhatsApp API."""
+    if not texto or not str(texto).strip():
+        logger.info(f"[ASYNC] Envio cancelado: Tentativa de enviar mensagem vazia para {telefone_destino}.")
+        return False
+        
     if not settings.WHATSAPP_TOKEN or not settings.WHATSAPP_PHONE_ID:
         logger.error("Credenciais do WhatsApp não configuradas no .env")
         return False

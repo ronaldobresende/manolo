@@ -356,12 +356,10 @@ def rotear_por_intencao(state: ManoloState) -> str:
     
     if intencao == "checklist":
         return "extrair_silencioso"
-    elif intencao == "pergunta":
-        return "rag"
     elif intencao == "relatorio_checklist":
         return "relatorio_checklist"
     else:
-        return "fim"
+        return "rag"
 
 
 
