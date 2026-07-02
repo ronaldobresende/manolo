@@ -31,18 +31,32 @@ function DomainCard({ titulo, emoji, cor, children }: DomainCardProps) {
   )
 }
 
-function Campo({ label, valor }: { label: string; valor?: string | boolean | null | string[] | number }) {
+function Campo({ label, valor }: { label: string; valor?: any }) {
   if (valor === null || valor === undefined || valor === '') return null
 
-  let display: string
-  if (typeof valor === 'boolean') display = valor ? 'Sim' : 'Não'
-  else if (Array.isArray(valor)) display = valor.join(', ')
-  else display = String(valor)
+  let display: React.ReactNode
+  
+  if (typeof valor === 'boolean') {
+    display = valor ? 'Sim' : 'Não'
+  } else if (Array.isArray(valor)) {
+    // Se for array de strings, junta. Se for array de objetos, tenta stringificar bonitinho.
+    if (valor.every(item => typeof item === 'string' || typeof item === 'number')) {
+      display = valor.join(', ')
+    } else {
+      display = valor.map((v, i) => <div key={i} className="text-xs bg-gray-100 rounded px-1 mt-1">{JSON.stringify(v)}</div>)
+    }
+  } else if (typeof valor === 'object') {
+    // Evita o famigerado [object Object] extraindo os valores
+    const partes = Object.entries(valor).map(([k, v]) => `${formatKey(k)}: ${v}`)
+    display = <div className="text-xs bg-gray-50 rounded px-2 py-1 mt-0.5">{partes.join(' | ')}</div>
+  } else {
+    display = String(valor)
+  }
 
   return (
     <div className="flex gap-2">
       <span className="text-manolo-muted flex-shrink-0 w-32 text-xs pt-0.5">{label}</span>
-      <span className="text-manolo-text text-sm">{display}</span>
+      <span className="text-manolo-text text-sm flex-1">{display}</span>
     </div>
   )
 }

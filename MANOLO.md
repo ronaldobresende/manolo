@@ -13,7 +13,7 @@ O Manolo é um sistema pessoal de acompanhamento do desenvolvimento infantil. Na
 
 - **Repositório de memória longitudinal** — laudos, relatórios de sessão, avaliações padronizadas, checklists diários, vídeos e áudios organizados e indexados semanticamente.
 - **Agente contextual** — LLM com acesso ao histórico completo e a um perfil vivo da criança, atualizado automaticamente.
-- **Checklist diário inteligente** — preenchido por voz, vídeo ou texto, com o agente perguntando o que faltar.
+- **Checklist diário inteligente** — preenchido por voz, áudio, texto ou imagem (Visão Computacional), com o agente estruturando dados via Structured Outputs.
 - **Atividades propostas** — terapeutas cadastram atividades vinculadas à criança, família executa e registra feedback.
 
 ### Projeto piloto
@@ -31,8 +31,8 @@ A primeira criança do sistema é **Bernardo**, filho do administrador. O sistem
 | Autenticação | Número de telefone (WhatsApp) + JWT via cookies (Web) | Segurança e isolamento completo entre sessões |
 | Backend | Python + FastAPI | Ecossistema LLM mais maduro em Python |
 | Banco relacional | PostgreSQL + pgvector | Relacional + busca vetorial no mesmo banco |
-| Object storage | Cloudflare R2 | Custo baixo, PDFs, vídeos, áudios |
-| LLM | OpenAI (gpt-4o / gpt-4o-mini) | Melhor qualidade de estruturação de dados |
+| Object storage | Cloudflare R2 | Custo baixo, PDFs, vídeos, áudios e imagens |
+| LLM Principal | OpenAI (gpt-4o / gpt-4o-mini) | Melhor qualidade de estruturação de dados (Structured Outputs) e Visão |
 | Transcrição de áudio | Whisper API (OpenAI) | Mais rápida e consome menos recursos locais |
 | Hospedagem | Render ou Railway | Simples, barato, CI/CD via GitHub |
 | Multi-tenant | Por account_id em todas as tabelas | Isolamento completo entre famílias/clínicas |

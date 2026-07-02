@@ -61,11 +61,12 @@ O perfil vivo é um resumo do estado atual da criança em diferentes domínios.
 Instruções:
 1. Retorne APENAS um JSON válido, sem markdown ou marcações extras.
 2. O JSON deve conter EXATAMENTE as seguintes chaves de nível superior: "comunicacao", "motor", "alimentacao", "sono", "regulacao" e "resumo_geral".
-3. Os valores para as 5 primeiras chaves devem ser objetos JSON contendo detalhes estruturados que julgar mais relevantes (ex: pontos fortes, dificuldades, tendências, vocabulário).
-4. O valor de "resumo_geral" deve ser uma string de texto (um parágrafo resumindo de forma humana o perfil geral atual da criança).
-5. Seja específico sobre tendências (melhorou, piorou, estável) e cite as datas dos documentos ou checklists quando introduzir uma observação temporal importante.
-6. Se o dado do perfil atual não foi alterado ou invalidado pelos novos dados, mantenha-o no novo perfil. Integre o novo com o antigo harmoniosamente.
-7. Responda sempre em português.
+3. Os valores para as 5 primeiras chaves devem ser objetos JSON SIMPLES de APENAS UM NÍVEL (flat). Os valores dentro desses objetos não podem ser outros objetos (proibido objetos aninhados). Use apenas strings, números ou arrays simples de strings.
+4. SÍNTESE CLÍNICA (MUITO IMPORTANTE): O Perfil Vivo NÃO É um log de eventos. NUNCA liste datas, horários isolados ou registros brutos (ex: não escreva "dormiu às 15h no dia X, às 16h no dia Y"). Em vez disso, identifique PADRÕES, QUALIDADE, RISCOS e TENDÊNCIAS (ex: "Padrão de sono instável", "Média de 2 horas de soneca", "Dificuldade para iniciar o sono noturno").
+5. O valor de "resumo_geral" deve ser uma string de texto (um parágrafo resumindo de forma humana o perfil geral atual da criança).
+6. Seja específico sobre tendências (melhorou, piorou, estável) citando apenas períodos amplos (ex: "na última semana").
+7. Se o dado do perfil atual não foi alterado ou invalidado, mantenha-o. Integre o novo com o antigo harmoniosamente.
+8. Responda sempre em português.
 """
 
     prompt_usuario = f"""
