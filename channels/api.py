@@ -261,7 +261,7 @@ async def obter_checklist_detalhado(crianca_id: str, data: str):
         row = _query_one(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
         secoes[nome] = dict(row) if row else None
 
-    terapias_rows = _query_many("SELECT id, horario_inicio, horario_fim, especialidade, notas_sessao FROM sessoes_terapia WHERE crianca_id = %s AND data = %s", (crianca_id, data))
+    terapias_rows = _query_many("SELECT id, horario_inicio, horario_fim, especialidade, notas AS notas_sessao FROM sessoes_terapia WHERE crianca_id = %s AND data = %s", (crianca_id, data))
     secoes["sessoes_terapia"] = [dict(r) for r in terapias_rows]
 
     return {**dict(checklist), "secoes": secoes}
