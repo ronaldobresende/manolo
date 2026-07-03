@@ -465,8 +465,6 @@ function ChecklistNovoContent() {
 
       </div>
 
-      </div>
-
       {/* FIXED BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-neutral-border p-4 shadow-lg z-10 flex items-center justify-between">
         <div className="flex items-center gap-4">
