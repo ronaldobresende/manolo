@@ -131,7 +131,7 @@ export default function TerapiasPage() {
                 
                 {t.notas_sessao && (
                   <div className="mt-4 pt-4 border-t border-neutral-border">
-                    <p className="text-sm text-manolo-text whitespace-pre-line line-clamp-4">{t.notas_sessao}</p>
+                    <p className="text-sm text-manolo-text whitespace-pre-line">{t.notas_sessao}</p>
                   </div>
                 )}
               </div>
@@ -169,7 +169,7 @@ export default function TerapiasPage() {
               </div>
               <div>
                 <label className="label">Notas da Sessão</label>
-                <textarea className="input min-h-[100px]" value={editingTerapia.notas_sessao || ''} onChange={e => setEditingTerapia({ ...editingTerapia, notas_sessao: e.target.value })}></textarea>
+                <textarea className="input min-h-[240px]" value={editingTerapia.notas_sessao || ''} onChange={e => setEditingTerapia({ ...editingTerapia, notas_sessao: e.target.value })}></textarea>
               </div>
             </div>
 
