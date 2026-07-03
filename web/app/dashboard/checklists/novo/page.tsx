@@ -202,6 +202,29 @@ function ChecklistNovoContent() {
     }))
   }
 
+  const addTerapia = () => {
+    setForm(prev => ({
+      ...prev,
+      sessoes_terapia: [...(prev.sessoes_terapia || []), { especialidade: '', horario_inicio: '', horario_fim: '', notas_sessao: '' }]
+    }))
+  }
+
+  const removeTerapia = (index: number) => {
+    setForm(prev => {
+      const arr = [...(prev.sessoes_terapia || [])]
+      arr.splice(index, 1)
+      return { ...prev, sessoes_terapia: arr }
+    })
+  }
+
+  const updateTerapia = (index: number, field: string, value: any) => {
+    setForm(prev => {
+      const arr = [...(prev.sessoes_terapia || [])]
+      arr[index] = { ...arr[index], [field]: value }
+      return { ...prev, sessoes_terapia: arr }
+    })
+  }
+
   const handleSave = async () => {
     setStatus('saving')
     try {
@@ -465,30 +488,57 @@ function ChecklistNovoContent() {
 
       </div>
 
-      {form.sessoes_terapia && form.sessoes_terapia.length > 0 && (
-        <div className="card p-4">
-          <h3 className="font-semibold text-manolo-text mb-4 flex items-center gap-2">
-            <span className="text-xl">🏥</span> Terapias Registradas (Somente Leitura)
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-manolo-text flex items-center gap-2">
+            <span className="text-xl">🏥</span> Terapias Registradas
           </h3>
-          <div className="space-y-4">
-            {(form.sessoes_terapia as any[]).map((t, idx) => (
-              <div key={idx} className="bg-neutral-bg/30 p-4 rounded-lg border border-neutral-border">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-bold text-manolo-text capitalize">{t.especialidade || 'Sessão'}</span>
-                  {t.horario_inicio && t.horario_fim && (
-                    <span className="text-xs text-manolo-muted font-medium bg-neutral-bg px-2 py-1 rounded">
-                      {t.horario_inicio} - {t.horario_fim}
+          <button onClick={addTerapia} className="btn-secondary text-xs py-1.5 px-3 rounded-md border border-neutral-border">+ Adicionar Terapia</button>
+        </div>
+        
+        {(!form.sessoes_terapia || form.sessoes_terapia.length === 0) && (
+          <p className="text-sm text-manolo-muted">Nenhuma terapia registrada neste dia.</p>
+        )}
+
+        <div className="space-y-4">
+          {(form.sessoes_terapia || []).map((t: any, idx: number) => (
+            <div key={idx} className="bg-neutral-bg/30 p-4 rounded-lg border border-neutral-border space-y-3 relative">
+              <button 
+                onClick={() => removeTerapia(idx)} 
+                className="absolute top-2 right-2 text-manolo-muted hover:text-red-600 p-1 bg-white rounded-md shadow-sm border border-neutral-border"
+                title="Remover Terapia"
+              >✕</button>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-8">
+                <div className="md:col-span-1">
+                  <label className="label">Especialidade</label>
+                  <input type="text" className="input" placeholder="Ex: Terapia Ocupacional" value={t.especialidade || ''} onChange={e => updateTerapia(idx, 'especialidade', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Início</label>
+                  <input type="time" className="input" value={t.horario_inicio || ''} onChange={e => updateTerapia(idx, 'horario_inicio', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Fim</label>
+                  <input type="time" className="input" value={t.horario_fim || ''} onChange={e => updateTerapia(idx, 'horario_fim', e.target.value)} />
+                </div>
+              </div>
+              
+              <div>
+                <label className="label flex items-center gap-2">
+                  Notas da Sessão
+                  {t.nome_profissional && (
+                    <span className="text-[10px] font-normal text-primary bg-primary-50 px-1.5 py-0.5 rounded">
+                      Por: {t.nome_profissional.split(' ')[0]}
                     </span>
                   )}
-                </div>
-                {t.notas_sessao && (
-                  <p className="text-sm text-manolo-text whitespace-pre-line">{t.notas_sessao}</p>
-                )}
+                </label>
+                <textarea className="input min-h-[80px]" placeholder="Observações da terapeuta..." value={t.notas_sessao || ''} onChange={e => updateTerapia(idx, 'notas_sessao', e.target.value)}></textarea>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* FIXED BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-neutral-border p-4 shadow-lg z-10 flex items-center justify-between">

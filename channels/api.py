@@ -261,7 +261,12 @@ async def obter_checklist_detalhado(crianca_id: str, data: str):
         row = _query_one(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
         secoes[nome] = dict(row) if row else None
 
-    terapias_rows = _query_many("SELECT id, horario_inicio, horario_fim, especialidade, notas AS notas_sessao FROM sessoes_terapia WHERE crianca_id = %s AND data = %s", (crianca_id, data))
+    terapias_rows = _query_many("""
+        SELECT t.id, t.horario_inicio, t.horario_fim, t.especialidade, t.notas AS notas_sessao, u.nome AS nome_profissional
+        FROM sessoes_terapia t
+        LEFT JOIN usuarios u ON u.id = t.usuario_id
+        WHERE t.crianca_id = %s AND t.data = %s
+    """, (crianca_id, data))
     secoes["sessoes_terapia"] = [dict(r) for r in terapias_rows]
 
     return {**dict(checklist), "secoes": secoes}
@@ -327,6 +332,17 @@ async def criar_checklist(
     inserir_secao("checklist_humor", payload.humor)
     inserir_secao("checklist_rotina", payload.rotina)
     inserir_secao("checklist_observacoes", payload.observacoes)
+
+    # Inserir sessoes de terapia, se houver
+    if payload.sessoes_terapia:
+        for t in payload.sessoes_terapia:
+            if t.notas_sessao or t.especialidade:
+                _execute("""
+                    INSERT INTO sessoes_terapia (crianca_id, usuario_id, data, horario_inicio, horario_fim, especialidade, notas)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (crianca_id, data, especialidade) DO UPDATE SET notas = EXCLUDED.notas, horario_inicio = EXCLUDED.horario_inicio, horario_fim = EXCLUDED.horario_fim
+                """, (crianca_id, user["id"], payload.data, t.horario_inicio, t.horario_fim, t.especialidade or 'Geral', t.notas_sessao))
+
 
     # Dispara a atualização do perfil em background (sem bloquear o response)
     from agent.profile import atualizar_perfil
@@ -398,6 +414,39 @@ async def atualizar_checklist(
     upsert_secao("checklist_humor", payload.humor)
     upsert_secao("checklist_rotina", payload.rotina)
     upsert_secao("checklist_observacoes", payload.observacoes)
+
+    # Upsert sessoes_terapia (Sincronização completa para aquele dia)
+    if payload.sessoes_terapia is not None:
+        # Pega as atuais para deletar as que foram removidas no frontend
+        atuais = _query_many("SELECT id FROM sessoes_terapia WHERE crianca_id = %s AND data = %s", (crianca_id, data))
+        atuais_ids = {r["id"] for r in atuais}
+        
+        novos_ids = set()
+        for t in payload.sessoes_terapia:
+            if t.id:
+                # Atualiza
+                _execute("""
+                    UPDATE sessoes_terapia 
+                    SET horario_inicio = %s, horario_fim = %s, especialidade = %s, notas = %s
+                    WHERE id = %s AND crianca_id = %s
+                """, (t.horario_inicio, t.horario_fim, t.especialidade or 'Geral', t.notas_sessao, t.id, crianca_id))
+                novos_ids.add(t.id)
+            else:
+                # Cria nova
+                if t.notas_sessao or t.especialidade:
+                    novo = _execute_returning("""
+                        INSERT INTO sessoes_terapia (crianca_id, usuario_id, data, horario_inicio, horario_fim, especialidade, notas)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (crianca_id, data, especialidade) DO UPDATE SET notas = EXCLUDED.notas, horario_inicio = EXCLUDED.horario_inicio, horario_fim = EXCLUDED.horario_fim
+                        RETURNING id
+                    """, (crianca_id, user["id"], data, t.horario_inicio, t.horario_fim, t.especialidade or 'Geral', t.notas_sessao))
+                    if novo:
+                        novos_ids.add(novo["id"])
+        
+        # Deletar as que sobraram (foram removidas no front)
+        para_deletar = atuais_ids - novos_ids
+        for del_id in para_deletar:
+            _execute("DELETE FROM sessoes_terapia WHERE id = %s", (del_id,))
 
     # Dispara a atualização do perfil em background
     from agent.profile import atualizar_perfil

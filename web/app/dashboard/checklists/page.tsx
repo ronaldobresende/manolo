@@ -177,6 +177,11 @@ function ModalChecklist({ data, criancaId, onClose }: {
                     <div key={i} className="mb-3 last:mb-0">
                       <div className="font-medium text-manolo-text text-sm flex items-center gap-2 capitalize">
                         {t.especialidade}
+                        {t.nome_profissional && (
+                          <span className="text-xs text-primary bg-primary-50 px-1.5 py-0.5 rounded ml-1">
+                            {t.nome_profissional.split(' ')[0]}
+                          </span>
+                        )}
                         {t.horario_inicio && t.horario_fim && (
                           <span className="font-normal text-xs text-manolo-muted">
                             ({t.horario_inicio} - {t.horario_fim})

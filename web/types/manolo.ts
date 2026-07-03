@@ -176,6 +176,7 @@ export interface SessaoTerapia {
   horario_fim?: string
   especialidade?: string
   notas_sessao?: string
+  nome_profissional?: string
 }
 
 export interface SecaoObservacoes {
