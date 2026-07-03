@@ -78,11 +78,12 @@ def construir_prompt_sistema(crianca_id: str, perfil_usuario: str, nome_usuario:
     """Gera o System Prompt base do Manolo."""
     perfil_vivo = obter_perfil_vivo(crianca_id)
     hoje = _obter_datetime_formatado()
+    primeiro_nome = nome_usuario.split()[0] if nome_usuario else ""
 
     prompt = f"""Você é o Manolo, assistente de acompanhamento do desenvolvimento infantil.
 Data e hora atual em São Paulo: {hoje}. Use isso para resolver referências como 'hoje', 'ontem', 'essa semana'.
 
-O nome do usuário atual é {nome_usuario}. Use o nome dele na primeira mensagem da conversa.
+O nome do usuário atual é {primeiro_nome}. Use o nome dele na primeira mensagem da conversa.
 
 PERFIL ATUAL DA CRIANÇA:
 {perfil_vivo}
@@ -178,8 +179,16 @@ REGRAS DE DATA E CONTEXTO:
 - NUNCA infira que um evento foi "ontem" ou outra data apenas porque o usuário usou o passado ("ele dormiu mal").
 - Sempre que a data não for EXPLÍCITA, retorne data_referencia_iso = null (assumiremos hoje).
 - Se a mensagem descrever eventos de múltiplos dias explicitamente, crie múltiplos itens na lista 'relatos'.
-- AMBIGUIDADE (CONFIRMAÇÃO): Marque 'data_ambigua = True' APENAS se o usuário mencionar um dia vago E O CONTEXTO FOR IMPOSSÍVEL DE DEDUZIR (ex: "semana passada", "aquele dia").
-- Se o usuário disser "comeu maçã", e você não souber se foi café ou almoço, anote no campo 'notas' da alimentação, NÃO marque como ambíguo. Evite ao máximo interromper a família."""
+- AMBIGUIDADE (CONFIRMAÇÃO): Marque 'data_ambigua = True' APENAS se o usuário mencionar um dia vago E O CONTEXTO FOR IMPOSSÍVEL DE DEDUZIR.
+- Se o usuário disser "comeu maçã", e você não souber se foi café ou almoço, anote no campo 'notas' da alimentação.
+
+REGRAS DE DUPLA EXTRAÇÃO (TERAPEUTAS):
+- Se o usuário atual for um terapeuta, foque em preencher a lista 'sessoes_terapia' com os detalhes da sessão (horários, notas clínicas, especialidade).
+- SIMULTANEAMENTE, extraia TODOS os comportamentos descritos (mesmo os que pareçam rotineiros) e distribua-os nas categorias apropriadas. Exemplos:
+  - "Colaborou com a troca da fralda" -> vestuario.colaborou_roupa = True
+  - Engajamento motor -> movimento.atividades
+  - Brinquedos usados -> brincar.com_que_brincou
+- O terapeuta NÃO precisa relatar comportamentos domésticos. Deixe como null apenas o que não for dito, mas extraia rigorosamente tudo o que for relatado!"""
 
     try:
         response = client.beta.chat.completions.parse(
@@ -326,7 +335,12 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     nome_usuario = state.get("nome_usuario", "Família")
     perfil_usuario = state.get("perfil_usuario", "família")
     prompt_sistema = construir_prompt_sistema(crianca_id, perfil_usuario, nome_usuario)
-    prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva até dois parágrafos bem calorosos e empáticos para a família resumindo como foi o dia da criança.\n\n{resumo_formatado}"
+    
+    if perfil_usuario == "terapeuta":
+        prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva um resumo técnico e objetivo focado na evolução clínica, comportamentos e terapias realizadas.\n\n{resumo_formatado}"
+    else:
+        prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva até dois parágrafos bem calorosos e empáticos para a família resumindo como foi o dia da criança.\n\n{resumo_formatado}"
+    
     
     try:
         response = client.chat.completions.create(

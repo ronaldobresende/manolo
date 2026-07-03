@@ -257,13 +257,14 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
     if "rotina" in campos and campos["rotina"]:
         r = campos["rotina"]
         cur.execute("""
-            INSERT INTO checklist_rotina (checklist_id, guardou_brinquedos, ajudou_tarefa, aceitou_transicao)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO checklist_rotina (checklist_id, guardou_brinquedos, ajudou_tarefa, aceitou_transicao, teve_escola)
+            VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (checklist_id) DO UPDATE SET
                 guardou_brinquedos = COALESCE(EXCLUDED.guardou_brinquedos, checklist_rotina.guardou_brinquedos),
                 ajudou_tarefa = COALESCE(EXCLUDED.ajudou_tarefa, checklist_rotina.ajudou_tarefa),
-                aceitou_transicao = COALESCE(EXCLUDED.aceitou_transicao, checklist_rotina.aceitou_transicao)
-        """, (checklist_id, r.get('guardou_brinquedos'), r.get('ajudou_tarefa'), r.get('aceitou_transicao')))
+                aceitou_transicao = COALESCE(EXCLUDED.aceitou_transicao, checklist_rotina.aceitou_transicao),
+                teve_escola = COALESCE(EXCLUDED.teve_escola, checklist_rotina.teve_escola)
+        """, (checklist_id, r.get('guardou_brinquedos'), r.get('ajudou_tarefa'), r.get('aceitou_transicao'), r.get('teve_escola')))
 
     # OBSERVACOES
     if "observacoes" in campos and campos["observacoes"]:
@@ -276,6 +277,22 @@ def _upsert_campos_no_banco(cur, checklist_id: str, campos: dict):
                 dificuldades = NULLIF(CONCAT_WS('\n', NULLIF(checklist_observacoes.dificuldades, ''), NULLIF(EXCLUDED.dificuldades, '')), ''),
                 diferente_hoje = NULLIF(CONCAT_WS('\n', NULLIF(checklist_observacoes.diferente_hoje, ''), NULLIF(EXCLUDED.diferente_hoje, '')), '')
         """, (checklist_id, o.get('conquistas'), o.get('dificuldades'), o.get('diferente_hoje')))
+
+    # TERAPIAS
+    if "sessoes_terapia" in campos and campos["sessoes_terapia"]:
+        # Busca os metadados do dia a partir do checklist_id
+        cur.execute("SELECT crianca_id, usuario_id, data FROM checklists WHERE id = %s", (checklist_id,))
+        row_chk = cur.fetchone()
+        if row_chk:
+            for t in campos["sessoes_terapia"]:
+                cur.execute("""
+                    INSERT INTO sessoes_terapia (crianca_id, usuario_id, data, horario_inicio, horario_fim, especialidade, notas)
+                    VALUES (%s, %s, %s, %s, %s, COALESCE(%s, 'Geral'), %s)
+                    ON CONFLICT (crianca_id, data, especialidade) DO UPDATE SET
+                        horario_inicio = COALESCE(sessoes_terapia.horario_inicio, EXCLUDED.horario_inicio),
+                        horario_fim = COALESCE(EXCLUDED.horario_fim, sessoes_terapia.horario_fim),
+                        notas = NULLIF(CONCAT_WS('\n', NULLIF(sessoes_terapia.notas, ''), NULLIF(EXCLUDED.notas, '')), '')
+                """, (row_chk['crianca_id'], row_chk['usuario_id'], row_chk['data'], t.get('horario_inicio'), t.get('horario_fim'), t.get('especialidade'), t.get('notas_sessao')))
 
 
 def buscar_campos_ausentes(crianca_id: str, data_ref: str = None) -> list[str]:
@@ -438,6 +455,8 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
                 if not row:
                     return resumo + "Ainda não há nenhum registro para este dia. Pode me contar como foi!\n\nComplete no app: https://app.manolo.com"
                 
+                checklist_id = row['id']
+
                 def format_time(t):
                     if not t: return '?'
                     if hasattr(t, 'strftime'): return t.strftime('%H:%M')
@@ -455,56 +474,73 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
                     if h == 0: return f"{mins}m"
                     return f"{h}h{str(mins).zfill(2)}m"
 
-                # Funções de formatação mais detalhadas
+                def format_bool(val, str_true, str_false):
+                    if val is True: return str_true
+                    if val is False: return str_false
+                    return "não informado"
+
+                # Funções de formatação mais detalhadas e rigorosas com booleanos
                 def formata_alimentacao(r):
                     partes = []
-                    partes.append("comeu bem" if r.get('comeu_bem') else "não comeu tão bem")
+                    partes.append(format_bool(r.get('comeu_bem'), "comeu bem", "não comeu tão bem"))
+                    partes.append(format_bool(r.get('comeu_sentado'), "comeu sentado", "não comeu sentado"))
                     if r.get('aceitou'): partes.append(f"aceitou: {format_list(r.get('aceitou'))}")
                     if r.get('recusou'): partes.append(f"recusou: {format_list(r.get('recusou'))}")
                     if r.get('utensilio'): partes.append(f"usou {r.get('utensilio')}")
-                    return " | ".join(partes)
+                    return " | ".join(p for p in partes if p and p != "não informado")
 
                 def formata_comunicacao(r):
                     partes = []
                     if r.get('palavras_ditas'): partes.append(f"falou: {format_list(r.get('palavras_ditas'))}")
-                    if r.get('usou_gestos'): partes.append("usou gestos")
-                    if r.get('apontou'): partes.append("apontou")
-                    if r.get('imitou'): partes.append("imitou")
+                    if r.get('usou_gestos') is True: partes.append("usou gestos")
+                    if r.get('apontou') is True: partes.append("apontou")
+                    if r.get('imitou') is True: partes.append("imitou")
+                    if r.get('respondeu_nome'): partes.append(f"respondeu ao nome: {r.get('respondeu_nome')}")
+                    if r.get('puxou_mao'): partes.append(f"puxou a mão: {r.get('puxou_mao')}")
                     return " | ".join(partes) if partes else "sem detalhes"
 
                 def formata_brincar(r):
                     partes = []
                     if r.get('com_que_brincou'): partes.append(f"brincou de: {format_list(r.get('com_que_brincou'))}")
                     if r.get('modo'): partes.append(f"modo: {r.get('modo')}")
-                    if r.get('fez_faz_de_conta'): partes.append("faz de conta")
+                    if r.get('fez_faz_de_conta') is True: partes.append("fez faz de conta")
+                    if r.get('tempo_sem_tela_minutos'): partes.append(f"tempo brincando: {format_duration(r.get('tempo_sem_tela_minutos'))}")
                     return " | ".join(partes) if partes else "sem detalhes"
 
                 def formata_higiene(r):
                     partes = [f"banho foi {r.get('banho') or 'ok'}"]
-                    if r.get('escovou_dentes'): partes.append("escovou dentes")
-                    if r.get('sinalizou_banheiro'): partes.append("sinalizou banheiro")
+                    if r.get('escovou_dentes') is True: partes.append("escovou dentes")
+                    if r.get('sinalizou_banheiro') is True: partes.append("sinalizou banheiro")
                     return " | ".join(partes)
+
+                def formata_vestuario(r):
+                    partes = []
+                    partes.append(format_bool(r.get('colaborou_roupa'), "colaborou com a roupa", "não colaborou com a roupa"))
+                    partes.append(format_bool(r.get('incomodo_sensorial'), "teve incômodo sensorial", "sem incômodo sensorial"))
+                    return " | ".join(p for p in partes if p and p != "não informado") or "sem detalhes"
 
                 def formata_movimento(r):
                     partes = []
                     if r.get('atividades'): partes.append(format_list(r.get('atividades')))
-                    if r.get('caiu_muito'): partes.append("caiu muito")
-                    if r.get('buscou_colo'): partes.append("buscou bastante colo")
+                    if r.get('caiu_muito') is True: partes.append("caiu muito")
+                    if r.get('buscou_colo') is True: partes.append("buscou bastante colo")
                     return " | ".join(partes) if partes else "sem detalhes"
 
                 def formata_rotina(r):
                     partes = []
-                    if r.get('teve_terapia') is not None:
-                        partes.append(f"terapia: {'sim' if r.get('teve_terapia') else 'não'}")
                     if r.get('teve_escola') is not None:
                         partes.append(f"escola: {'sim' if r.get('teve_escola') else 'não'}")
                     if r.get('aceitou_transicao') is not None:
                         partes.append("aceitou transições" if r.get('aceitou_transicao') else "resistiu a transições")
+                    if r.get('guardou_brinquedos') is not None:
+                        partes.append("guardou brinquedos" if r.get('guardou_brinquedos') else "não guardou brinquedos")
+                    if r.get('ajudou_tarefa') is not None:
+                        partes.append("ajudou nas tarefas" if r.get('ajudou_tarefa') else "não ajudou nas tarefas")
                     return " | ".join(partes) if partes else "sem detalhes"
 
                 def formata_sono(r):
                     base = f"dormiu às {format_time(r.get('dormiu_as'))}, acordou às {format_time(r.get('acordou_as'))}"
-                    if r.get('acordou_noite'):
+                    if r.get('acordou_noite') is True:
                         base += " | acordou na noite"
                     if r.get('cochilo_inicio') or r.get('cochilo_fim'):
                         base += f" | cochilou ({format_time(r.get('cochilo_inicio'))} - {format_time(r.get('cochilo_fim'))})"
@@ -514,16 +550,15 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
                 campos = [
                     ("sono", "checklist_sono", "Sono", formata_sono),
                     ("alimentacao", "checklist_alimentacao", "Alimentação", formata_alimentacao),
-                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {format_duration(r.get('tempo_minutos'))}{(' (' + r.get('conteudo') + ')') if r.get('conteudo') else ''}" if r.get('usou_tela') else "não usou telas hoje! 🎉"),
+                    ("tela", "checklist_tela", "Tela", lambda r: f"usou por {format_duration(r.get('tempo_minutos'))}{(' (' + r.get('conteudo') + ')') if r.get('conteudo') else ''}" if r.get('usou_tela') is True else ("não usou telas hoje! 🎉" if r.get('usou_tela') is False else "não informado")),
                     ("comunicacao", "checklist_comunicacao", "Comunicação", formata_comunicacao),
                     ("brincar", "checklist_brincar", "Brincar", formata_brincar),
-                    ("humor", "checklist_humor", "Humor", lambda r: f"{r.get('humor_geral') or 'bom'}{' | teve crise' if r.get('teve_crise') else ''}{(' | acalmou com: ' + r.get('o_que_acalmou')) if r.get('o_que_acalmou') else ''}"),
+                    ("humor", "checklist_humor", "Humor", lambda r: f"{r.get('humor_geral') or 'bom'}{' | teve crise' if r.get('teve_crise') is True else ''}{(' | acalmou com: ' + r.get('o_que_acalmou')) if r.get('o_que_acalmou') else ''}"),
                     ("higiene", "checklist_higiene", "Higiene", formata_higiene),
+                    ("vestuario", "checklist_vestuario", "Vestuário", formata_vestuario),
                     ("movimento", "checklist_movimento", "Movimento", formata_movimento),
                     ("rotina", "checklist_rotina", "Rotina", formata_rotina),
                 ]
-                
-                checklist_id = row['id']
                 
                 for key, tabela, nome, formatador in campos:
                     cur.execute(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
@@ -533,6 +568,17 @@ def formatar_resumo_diario(crianca_id: str, data_ref: str) -> str:
                         resumo += f"✅ {nome}: {desc}\n"
                     else:
                         resumo += f"⬜ {nome}: não registrado\n"
+                        
+                # Adiciona seção de terapias
+                cur.execute("SELECT * FROM sessoes_terapia WHERE crianca_id = %s AND data = %s ORDER BY horario_inicio", (crianca_id, data_ref))
+                terapias = cur.fetchall()
+                if terapias:
+                    resumo += "\n🏥 Sessões de Terapia:\n"
+                    for t in terapias:
+                        horario = ""
+                        if t.get('horario_inicio') or t.get('horario_fim'):
+                            horario = f"({format_time(t.get('horario_inicio'))} - {format_time(t.get('horario_fim'))}) "
+                        resumo += f"- {horario}{t.get('especialidade')}: {t.get('notas') or 'sem notas'}\n"
                         
     except Exception as e:
         logger.error(f"Erro ao formatar resumo: {e}")

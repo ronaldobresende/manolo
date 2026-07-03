@@ -96,6 +96,7 @@ export interface ChecklistResumo {
   modo_brincar?: string
   usou_tela?: boolean
   tempo_tela_minutos?: number
+  teve_terapia?: boolean
 }
 
 export interface SecaoSono {
@@ -166,6 +167,15 @@ export interface SecaoRotina {
   guardou_brinquedos?: boolean
   ajudou_tarefa?: boolean
   aceitou_transicao?: boolean
+  teve_escola?: boolean
+}
+
+export interface SessaoTerapia {
+  id?: string
+  horario_inicio?: string
+  horario_fim?: string
+  especialidade?: string
+  notas_sessao?: string
 }
 
 export interface SecaoObservacoes {
@@ -192,6 +202,7 @@ export interface ChecklistDetalhado {
     humor?: SecaoHumor | null
     rotina?: SecaoRotina | null
     observacoes?: SecaoObservacoes | null
+    sessoes_terapia?: SessaoTerapia[]
   }
 }
 

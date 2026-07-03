@@ -62,11 +62,19 @@ class ChecklistRotina(BaseModel):
     guardou_brinquedos: Optional[bool] = None
     ajudou_tarefa: Optional[bool] = None
     aceitou_transicao: Optional[bool] = None
+    teve_escola: Optional[bool] = None
 
 class ChecklistObservacoes(BaseModel):
     conquistas: Optional[str] = None
     dificuldades: Optional[str] = None
     diferente_hoje: Optional[str] = None
+
+class SessaoTerapia(BaseModel):
+    id: Optional[str] = None
+    horario_inicio: Optional[str] = None
+    horario_fim: Optional[str] = None
+    especialidade: Optional[str] = None
+    notas_sessao: Optional[str] = None
 
 class ChecklistPayload(BaseModel):
     data: str
@@ -82,3 +90,4 @@ class ChecklistPayload(BaseModel):
     humor: Optional[ChecklistHumor] = None
     rotina: Optional[ChecklistRotina] = None
     observacoes: Optional[ChecklistObservacoes] = None
+    sessoes_terapia: Optional[List[SessaoTerapia]] = Field(default_factory=list)

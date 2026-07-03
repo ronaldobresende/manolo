@@ -25,8 +25,9 @@ const DEFAULT_STATE = {
   vestuario: { colaborou_roupa: false, incomodo_sensorial: false },
   movimento: { atividades: [], caiu_muito: false, buscou_colo: false },
   humor: { humor_geral: '', teve_crise: false, o_que_acalmou: '', cobertor_disponivel: false, se_acalmou_sem_cobertor: false, notas: '' },
-  rotina: { guardou_brinquedos: false, ajudou_tarefa: false, aceitou_transicao: false },
-  observacoes: { conquistas: '', dificuldades: '', diferente_hoje: '' }
+  rotina: { guardou_brinquedos: false, ajudou_tarefa: false, aceitou_transicao: false, teve_escola: false },
+  observacoes: { conquistas: '', dificuldades: '', diferente_hoje: '' },
+  sessoes_terapia: []
 }
 
 function getSectionStatus(section: string, form: typeof DEFAULT_STATE, loadedSections: string[]) {
@@ -165,7 +166,11 @@ function ChecklistNovoContent() {
         const secs = []
         for (const [secName, secData] of Object.entries(res.secoes || {})) {
           if (secData) {
-            dbState[secName] = { ...(DEFAULT_STATE[secName as keyof typeof DEFAULT_STATE] as any), ...(secData as any) }
+            if (secName === 'sessoes_terapia') {
+              dbState[secName] = secData
+            } else {
+              dbState[secName] = { ...(DEFAULT_STATE[secName as keyof typeof DEFAULT_STATE] as any), ...(secData as any) }
+            }
             secs.push(secName)
           }
         }
@@ -443,6 +448,7 @@ function ChecklistNovoContent() {
                   <Toggle label="Guardou brinquedos?" checked={form.rotina.guardou_brinquedos} onChange={v => updateSection('rotina', 'guardou_brinquedos', v)} />
                   <Toggle label="Ajudou tarefa?" checked={form.rotina.ajudou_tarefa} onChange={v => updateSection('rotina', 'ajudou_tarefa', v)} />
                   <Toggle label="Aceitou transição?" checked={form.rotina.aceitou_transicao} onChange={v => updateSection('rotina', 'aceitou_transicao', v)} />
+                  <Toggle label="Foi para a escola?" checked={form.rotina.teve_escola} onChange={v => updateSection('rotina', 'teve_escola', v)} />
                 </div>
               </div>
               {/* Observações */}
@@ -458,6 +464,31 @@ function ChecklistNovoContent() {
         </SectionCard>
 
       </div>
+
+      {form.sessoes_terapia && form.sessoes_terapia.length > 0 && (
+        <div className="card p-4">
+          <h3 className="font-semibold text-manolo-text mb-4 flex items-center gap-2">
+            <span className="text-xl">🏥</span> Terapias Registradas (Somente Leitura)
+          </h3>
+          <div className="space-y-4">
+            {(form.sessoes_terapia as any[]).map((t, idx) => (
+              <div key={idx} className="bg-neutral-bg/30 p-4 rounded-lg border border-neutral-border">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-bold text-manolo-text capitalize">{t.especialidade || 'Sessão'}</span>
+                  {t.horario_inicio && t.horario_fim && (
+                    <span className="text-xs text-manolo-muted font-medium bg-neutral-bg px-2 py-1 rounded">
+                      {t.horario_inicio} - {t.horario_fim}
+                    </span>
+                  )}
+                </div>
+                {t.notas_sessao && (
+                  <p className="text-sm text-manolo-text whitespace-pre-line">{t.notas_sessao}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* FIXED BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-neutral-border p-4 shadow-lg z-10 flex items-center justify-between">

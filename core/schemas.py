@@ -7,6 +7,12 @@ from typing import List, Optional, Literal
 # Sub-modelos do Checklist Diário
 # ==========================================
 
+class SessaoTerapiaModel(BaseModel):
+    horario_inicio: Optional[str] = Field(None, description="Horário de início (formato HH:MM)")
+    horario_fim: Optional[str] = Field(None, description="Horário de fim (formato HH:MM)")
+    especialidade: Optional[str] = Field(None, description="Especialidade da terapia (ex: fonoaudiologia, psicologia, terapia ocupacional)")
+    notas_sessao: Optional[str] = Field(None, description="Notas da sessão, incluindo descrição das atividades, objetivos trabalhados e engajamento")
+
 class SonoModel(BaseModel):
     dormiu_as: Optional[str] = Field(None, description="Horário aproximado em que dormiu (formato HH:MM)")
     acordou_as: Optional[str] = Field(None, description="Horário aproximado em que acordou (formato HH:MM)")
@@ -66,6 +72,7 @@ class RotinaModel(BaseModel):
     guardou_brinquedos: Optional[bool] = Field(None, description="Se ajudou a guardar os brinquedos")
     ajudou_tarefa: Optional[bool] = Field(None, description="Se participou ou ajudou em alguma tarefa da casa")
     aceitou_transicao: Optional[bool] = Field(None, description="Se aceitou de forma tranquila as transições entre atividades")
+    teve_escola: Optional[bool] = Field(None, description="Se a criança foi para a escola hoje")
 
 class ObservacoesModel(BaseModel):
     conquistas: Optional[str] = Field(None, description="Avanços de autonomia, iniciativa funcional, marcos ou comportamentos positivos (ex: 'foi na bolsa e pegou chocolate sozinho'). NÃO coloque aqui o que ele comeu ou brincou se couber nos campos específicos.")
@@ -84,6 +91,7 @@ class CamposPreenchidos(BaseModel):
     tela: Optional[TelaModel] = None
     rotina: Optional[RotinaModel] = None
     observacoes: Optional[ObservacoesModel] = None
+    sessoes_terapia: Optional[List[SessaoTerapiaModel]] = Field(default_factory=list, description="Lista de sessões de terapia ocorridas no dia")
 
 class RelatoDiario(BaseModel):
     data_referencia_iso: Optional[str] = Field(None, description="Data à qual o relato se refere, no formato YYYY-MM-DD. NUNCA infira 'ontem' ou outras datas. Se o usuário NÃO disser a data (ex: 'ele dormiu mal'), retorne null para que o sistema assuma HOJE.")

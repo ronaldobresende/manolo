@@ -184,6 +184,25 @@ async def listar_checklists(
         ORDER BY ch.data DESC
         LIMIT %s OFFSET %s
     """, tuple(params))
+    
+    # Verifica se teve terapia naquele dia
+    # Usando list comprehension in memory para nao complificar a query principal
+    # idealmente, num cenário de alta escala faríamos um LEFT JOIN ou EXISTS na query acima
+    dias = [r["data"] for r in rows]
+    terapias_por_dia = set()
+    if dias:
+        format_strings = ",".join(["%s"] * len(dias))
+        terapias_rows = _query_many(f"""
+            SELECT DISTINCT data FROM sessoes_terapia WHERE crianca_id = %s AND data IN ({format_strings})
+        """, tuple([crianca_id] + dias))
+        for tr in terapias_rows:
+            terapias_por_dia.add(tr["data"])
+
+    res = []
+    for r in rows:
+        d = dict(r)
+        d["teve_terapia"] = d["data"] in terapias_por_dia
+        res.append(d)
 
     # Total para paginação
     count_params = [crianca_id]
@@ -205,7 +224,7 @@ async def listar_checklists(
         "total": total,
         "pagina": pagina,
         "por_pagina": por_pagina,
-        "checklists": [dict(r) for r in rows],
+        "checklists": res,
     }
 
 
@@ -241,6 +260,9 @@ async def obter_checklist_detalhado(crianca_id: str, data: str):
     for nome, tabela in tabelas:
         row = _query_one(f"SELECT * FROM {tabela} WHERE checklist_id = %s", (checklist_id,))
         secoes[nome] = dict(row) if row else None
+
+    terapias_rows = _query_many("SELECT id, horario_inicio, horario_fim, especialidade, notas_sessao FROM sessoes_terapia WHERE crianca_id = %s AND data = %s", (crianca_id, data))
+    secoes["sessoes_terapia"] = [dict(r) for r in terapias_rows]
 
     return {**dict(checklist), "secoes": secoes}
 

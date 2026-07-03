@@ -161,6 +161,7 @@ function ModalChecklist({ data, criancaId, onClose }: {
                   <CampoSec label="Guardou brinquedos" val={detalhe.secoes.rotina.guardou_brinquedos} />
                   <CampoSec label="Ajudou em tarefa" val={detalhe.secoes.rotina.ajudou_tarefa} />
                   <CampoSec label="Aceitou transições" val={detalhe.secoes.rotina.aceitou_transicao} />
+                  <CampoSec label="Foi para a escola" val={detalhe.secoes.rotina.teve_escola} />
                 </Secao>
               )}
               {detalhe.secoes.observacoes && (
@@ -168,6 +169,27 @@ function ModalChecklist({ data, criancaId, onClose }: {
                   <CampoSec label="Conquistas" val={detalhe.secoes.observacoes.conquistas} />
                   <CampoSec label="Dificuldades" val={detalhe.secoes.observacoes.dificuldades} />
                   <CampoSec label="Diferente hoje" val={detalhe.secoes.observacoes.diferente_hoje} />
+                </Secao>
+              )}
+              {detalhe.secoes.sessoes_terapia && detalhe.secoes.sessoes_terapia.length > 0 && (
+                <Secao titulo="🏥 Terapias">
+                  {detalhe.secoes.sessoes_terapia.map((t, i) => (
+                    <div key={i} className="mb-3 last:mb-0">
+                      <div className="font-medium text-manolo-text text-sm flex items-center gap-2 capitalize">
+                        {t.especialidade}
+                        {t.horario_inicio && t.horario_fim && (
+                          <span className="font-normal text-xs text-manolo-muted">
+                            ({t.horario_inicio} - {t.horario_fim})
+                          </span>
+                        )}
+                      </div>
+                      {t.notas_sessao && (
+                        <p className="text-sm text-manolo-text mt-1 whitespace-pre-line border-l-2 border-neutral-border pl-2">
+                          {t.notas_sessao}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </Secao>
               )}
             </>
@@ -244,8 +266,9 @@ export default function ChecklistsPage() {
                   className="table-row"
                   onClick={() => setSelecionado(c.data)}
                 >
-                  <td className="px-4 py-3 font-medium text-manolo-text whitespace-nowrap">
+                  <td className="px-4 py-3 font-medium text-manolo-text whitespace-nowrap flex items-center gap-2">
                     {format(new Date(c.data + 'T12:00:00'), 'dd/MM/yyyy')}
+                    {c.teve_terapia && <span title="Teve Terapia" className="text-base cursor-help">🏥</span>}
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     {c.resumo_dia ? (
