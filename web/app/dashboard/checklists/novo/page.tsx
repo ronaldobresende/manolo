@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { getCriancaSelecionada } from '@/lib/auth'
 import { apiFetch } from '@/lib/api'
 import { TagInput } from '@/components/ui/TagInput'
-import { Toggle } from '@/components/ui/Toggle'
+import { SelectBoolean } from '@/components/ui/SelectBoolean'
 import { 
   IconMoon, IconDeviceTv, IconSoup, IconPuzzle, 
   IconMessageCircle, IconBath, IconShirt, IconActivity, 
@@ -202,29 +202,6 @@ function ChecklistNovoContent() {
     }))
   }
 
-  const addTerapia = () => {
-    setForm(prev => ({
-      ...prev,
-      sessoes_terapia: [...(prev.sessoes_terapia || []), { especialidade: '', horario_inicio: '', horario_fim: '', notas_sessao: '' }]
-    }))
-  }
-
-  const removeTerapia = (index: number) => {
-    setForm(prev => {
-      const arr = [...(prev.sessoes_terapia || [])]
-      arr.splice(index, 1)
-      return { ...prev, sessoes_terapia: arr }
-    })
-  }
-
-  const updateTerapia = (index: number, field: string, value: any) => {
-    setForm(prev => {
-      const arr = [...(prev.sessoes_terapia || [])]
-      arr[index] = { ...arr[index], [field]: value }
-      return { ...prev, sessoes_terapia: arr }
-    })
-  }
-
   const handleSave = async () => {
     setStatus('saving')
     try {
@@ -277,7 +254,7 @@ function ChecklistNovoContent() {
             </div>
           </div>
           <div className="flex gap-6 mb-4">
-            <Toggle label="Acordou na noite?" checked={form.sono.acordou_noite} onChange={v => updateSection('sono', 'acordou_noite', v)} />
+            <SelectBoolean label="Acordou na noite?" checked={form.sono.acordou_noite} onChange={v => updateSection('sono', 'acordou_noite', v)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -297,9 +274,9 @@ function ChecklistNovoContent() {
 
         {/* ALIMENTACAO */}
         <SectionCard title="Alimentação" icon={IconSoup} status={getSectionStatus('alimentacao', form, loadedSections)}>
-          <div className="flex gap-6 mb-4">
-            <Toggle label="Comeu bem?" checked={form.alimentacao.comeu_bem} onChange={v => updateSection('alimentacao', 'comeu_bem', v)} />
-            <Toggle label="Comeu sentado?" checked={form.alimentacao.comeu_sentado} onChange={v => updateSection('alimentacao', 'comeu_sentado', v)} />
+          <div className="grid grid-cols-2 gap-6 mb-4">
+            <SelectBoolean label="Comeu bem?" checked={form.alimentacao.comeu_bem} onChange={v => updateSection('alimentacao', 'comeu_bem', v)} />
+            <SelectBoolean label="Comeu sentado?" checked={form.alimentacao.comeu_sentado} onChange={v => updateSection('alimentacao', 'comeu_sentado', v)} />
           </div>
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -325,10 +302,10 @@ function ChecklistNovoContent() {
 
         {/* COMUNICAÇÃO */}
         <SectionCard title="Comunicação" icon={IconMessageCircle} status={getSectionStatus('comunicacao', form, loadedSections)}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <Toggle label="Usou gestos?" checked={form.comunicacao.usou_gestos} onChange={v => updateSection('comunicacao', 'usou_gestos', v)} />
-            <Toggle label="Apontou?" checked={form.comunicacao.apontou} onChange={v => updateSection('comunicacao', 'apontou', v)} />
-            <Toggle label="Imitou som/ação?" checked={form.comunicacao.imitou} onChange={v => updateSection('comunicacao', 'imitou', v)} />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+            <SelectBoolean label="Usou gestos?" checked={form.comunicacao.usou_gestos} onChange={v => updateSection('comunicacao', 'usou_gestos', v)} />
+            <SelectBoolean label="Apontou?" checked={form.comunicacao.apontou} onChange={v => updateSection('comunicacao', 'apontou', v)} />
+            <SelectBoolean label="Imitou som/ação?" checked={form.comunicacao.imitou} onChange={v => updateSection('comunicacao', 'imitou', v)} />
           </div>
           <div>
             <label className="label">Palavras ditas</label>
@@ -360,7 +337,7 @@ function ChecklistNovoContent() {
         {/* BRINCAR */}
         <SectionCard title="Brincar" icon={IconPuzzle} status={getSectionStatus('brincar', form, loadedSections)}>
           <div className="flex gap-6 mb-4">
-            <Toggle label="Fez faz-de-conta?" checked={form.brincar.fez_faz_de_conta} onChange={v => updateSection('brincar', 'fez_faz_de_conta', v)} />
+            <SelectBoolean label="Fez faz-de-conta?" checked={form.brincar.fez_faz_de_conta} onChange={v => updateSection('brincar', 'fez_faz_de_conta', v)} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -397,8 +374,8 @@ function ChecklistNovoContent() {
                 <option value="difícil">Difícil</option>
               </select>
             </div>
-            <div className="flex items-center">
-              <Toggle label="Teve crise/meltdown?" checked={form.humor.teve_crise} onChange={v => updateSection('humor', 'teve_crise', v)} />
+            <div className="flex items-center mt-6">
+              <SelectBoolean label="Teve crise/meltdown?" checked={form.humor.teve_crise} onChange={v => updateSection('humor', 'teve_crise', v)} />
             </div>
           </div>
           {form.humor.teve_crise && (
@@ -407,9 +384,9 @@ function ChecklistNovoContent() {
               <input type="text" className="input" value={form.humor.o_que_acalmou || ''} onChange={e => updateSection('humor', 'o_que_acalmou', e.target.value)} />
             </div>
           )}
-          <div className="flex gap-6 mb-4">
-             <Toggle label="Cobertor disponível?" checked={form.humor.cobertor_disponivel} onChange={v => updateSection('humor', 'cobertor_disponivel', v)} />
-             <Toggle label="Acalmou sem cobertor?" checked={form.humor.se_acalmou_sem_cobertor} onChange={v => updateSection('humor', 'se_acalmou_sem_cobertor', v)} />
+          <div className="grid grid-cols-2 gap-6 mb-4">
+             <SelectBoolean label="Cobertor disponível?" checked={form.humor.cobertor_disponivel} onChange={v => updateSection('humor', 'cobertor_disponivel', v)} />
+             <SelectBoolean label="Acalmou sem cobertor?" checked={form.humor.se_acalmou_sem_cobertor} onChange={v => updateSection('humor', 'se_acalmou_sem_cobertor', v)} />
           </div>
           <div>
             <label className="label">Notas</label>
@@ -420,7 +397,7 @@ function ChecklistNovoContent() {
         {/* TELA */}
         <SectionCard title="Uso de Telas" icon={IconDeviceTv} status={getSectionStatus('tela', form, loadedSections)}>
           <div className="mb-4">
-            <Toggle label="Usou telas hoje?" checked={form.tela.usou_tela} onChange={v => updateSection('tela', 'usou_tela', v)} />
+            <SelectBoolean label="Usou telas hoje?" checked={form.tela.usou_tela} onChange={v => updateSection('tela', 'usou_tela', v)} />
           </div>
           {form.tela.usou_tela && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -451,27 +428,27 @@ function ChecklistNovoContent() {
               {/* Higiene */}
               <div>
                 <h4 className="text-sm font-semibold mb-2">Higiene</h4>
-                <div className="flex gap-4">
-                  <Toggle label="Escovou dentes?" checked={form.higiene.escovou_dentes} onChange={v => updateSection('higiene', 'escovou_dentes', v)} />
-                  <Toggle label="Sinalizou banheiro?" checked={form.higiene.sinalizou_banheiro} onChange={v => updateSection('higiene', 'sinalizou_banheiro', v)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectBoolean label="Escovou dentes?" checked={form.higiene.escovou_dentes} onChange={v => updateSection('higiene', 'escovou_dentes', v)} />
+                  <SelectBoolean label="Sinalizou banheiro?" checked={form.higiene.sinalizou_banheiro} onChange={v => updateSection('higiene', 'sinalizou_banheiro', v)} />
                 </div>
               </div>
               {/* Vestuario */}
               <div>
                 <h4 className="text-sm font-semibold mb-2">Vestuário</h4>
-                <div className="flex gap-4">
-                  <Toggle label="Colaborou ao vestir?" checked={form.vestuario.colaborou_roupa} onChange={v => updateSection('vestuario', 'colaborou_roupa', v)} />
-                  <Toggle label="Incômodo sensorial (etiqueta/tecido)?" checked={form.vestuario.incomodo_sensorial} onChange={v => updateSection('vestuario', 'incomodo_sensorial', v)} />
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectBoolean label="Colaborou ao vestir?" checked={form.vestuario.colaborou_roupa} onChange={v => updateSection('vestuario', 'colaborou_roupa', v)} />
+                  <SelectBoolean label="Incômodo sensorial (etiqueta/tecido)?" checked={form.vestuario.incomodo_sensorial} onChange={v => updateSection('vestuario', 'incomodo_sensorial', v)} />
                 </div>
               </div>
               {/* Rotina */}
               <div>
                 <h4 className="text-sm font-semibold mb-2">Rotina</h4>
-                <div className="flex flex-wrap gap-4">
-                  <Toggle label="Guardou brinquedos?" checked={form.rotina.guardou_brinquedos} onChange={v => updateSection('rotina', 'guardou_brinquedos', v)} />
-                  <Toggle label="Ajudou tarefa?" checked={form.rotina.ajudou_tarefa} onChange={v => updateSection('rotina', 'ajudou_tarefa', v)} />
-                  <Toggle label="Aceitou transição?" checked={form.rotina.aceitou_transicao} onChange={v => updateSection('rotina', 'aceitou_transicao', v)} />
-                  <Toggle label="Foi para a escola?" checked={form.rotina.teve_escola} onChange={v => updateSection('rotina', 'teve_escola', v)} />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <SelectBoolean label="Guardou brinquedos?" checked={form.rotina.guardou_brinquedos} onChange={v => updateSection('rotina', 'guardou_brinquedos', v)} />
+                  <SelectBoolean label="Ajudou tarefa?" checked={form.rotina.ajudou_tarefa} onChange={v => updateSection('rotina', 'ajudou_tarefa', v)} />
+                  <SelectBoolean label="Aceitou transição?" checked={form.rotina.aceitou_transicao} onChange={v => updateSection('rotina', 'aceitou_transicao', v)} />
+                  <SelectBoolean label="Foi para a escola?" checked={form.rotina.teve_escola} onChange={v => updateSection('rotina', 'teve_escola', v)} />
                 </div>
               </div>
               {/* Observações */}
@@ -488,56 +465,6 @@ function ChecklistNovoContent() {
 
       </div>
 
-      <div className="card p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-manolo-text flex items-center gap-2">
-            <span className="text-xl">🏥</span> Terapias Registradas
-          </h3>
-          <button onClick={addTerapia} className="btn-secondary text-xs py-1.5 px-3 rounded-md border border-neutral-border">+ Adicionar Terapia</button>
-        </div>
-        
-        {(!form.sessoes_terapia || form.sessoes_terapia.length === 0) && (
-          <p className="text-sm text-manolo-muted">Nenhuma terapia registrada neste dia.</p>
-        )}
-
-        <div className="space-y-4">
-          {(form.sessoes_terapia || []).map((t: any, idx: number) => (
-            <div key={idx} className="bg-neutral-bg/30 p-4 rounded-lg border border-neutral-border space-y-3 relative">
-              <button 
-                onClick={() => removeTerapia(idx)} 
-                className="absolute top-2 right-2 text-manolo-muted hover:text-red-600 p-1 bg-white rounded-md shadow-sm border border-neutral-border"
-                title="Remover Terapia"
-              >✕</button>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pr-8">
-                <div className="md:col-span-1">
-                  <label className="label">Especialidade</label>
-                  <input type="text" className="input" placeholder="Ex: Terapia Ocupacional" value={t.especialidade || ''} onChange={e => updateTerapia(idx, 'especialidade', e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">Início</label>
-                  <input type="time" className="input" value={t.horario_inicio || ''} onChange={e => updateTerapia(idx, 'horario_inicio', e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">Fim</label>
-                  <input type="time" className="input" value={t.horario_fim || ''} onChange={e => updateTerapia(idx, 'horario_fim', e.target.value)} />
-                </div>
-              </div>
-              
-              <div>
-                <label className="label flex items-center gap-2">
-                  Notas da Sessão
-                  {t.nome_profissional && (
-                    <span className="text-[10px] font-normal text-primary bg-primary-50 px-1.5 py-0.5 rounded">
-                      Por: {t.nome_profissional.split(' ')[0]}
-                    </span>
-                  )}
-                </label>
-                <textarea className="input min-h-[80px]" placeholder="Observações da terapeuta..." value={t.notas_sessao || ''} onChange={e => updateTerapia(idx, 'notas_sessao', e.target.value)}></textarea>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* FIXED BOTTOM BAR */}

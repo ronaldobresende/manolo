@@ -168,35 +168,6 @@ function ModalChecklist({ data, criancaId, onClose }: {
                 <Secao titulo="📝 Observações livres">
                   <CampoSec label="Conquistas" val={detalhe.secoes.observacoes.conquistas} />
                   <CampoSec label="Dificuldades" val={detalhe.secoes.observacoes.dificuldades} />
-                  <CampoSec label="Diferente hoje" val={detalhe.secoes.observacoes.diferente_hoje} />
-                </Secao>
-              )}
-              {detalhe.secoes.sessoes_terapia && detalhe.secoes.sessoes_terapia.length > 0 && (
-                <Secao titulo="🏥 Terapias">
-                  {detalhe.secoes.sessoes_terapia.map((t, i) => (
-                    <div key={i} className="mb-3 last:mb-0">
-                      <div className="font-medium text-manolo-text text-sm flex items-center gap-2 capitalize">
-                        {t.especialidade}
-                        {t.nome_profissional && (
-                          <span className="text-xs text-primary bg-primary-50 px-1.5 py-0.5 rounded ml-1">
-                            {t.nome_profissional.split(' ')[0]}
-                          </span>
-                        )}
-                        {t.horario_inicio && t.horario_fim && (
-                          <span className="font-normal text-xs text-manolo-muted">
-                            ({t.horario_inicio} - {t.horario_fim})
-                          </span>
-                        )}
-                      </div>
-                      {t.notas_sessao && (
-                        <p className="text-sm text-manolo-text mt-1 whitespace-pre-line border-l-2 border-neutral-border pl-2">
-                          {t.notas_sessao}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </Secao>
-              )}
             </>
           )}
         </div>
