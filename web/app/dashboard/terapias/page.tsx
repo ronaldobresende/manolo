@@ -110,7 +110,7 @@ export default function TerapiasPage() {
             Nenhuma terapia registrada.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="max-w-4xl space-y-4">
             {terapias.map(t => (
               <div key={t.id} className="card p-5 relative group">
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -125,7 +125,7 @@ export default function TerapiasPage() {
                   </p>
                   <p className="text-xs text-manolo-muted mt-0.5">
                     {t.horario_inicio && t.horario_fim ? `${t.horario_inicio} - ${t.horario_fim}` : 'Horário não informado'}
-                    {t.nome_profissional && ` • Por ${t.nome_profissional.split(' ')[0]}`}
+                    {t.nome_profissional && ` • Por ${t.nome_profissional}`}
                   </p>
                 </div>
                 
