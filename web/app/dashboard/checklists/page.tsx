@@ -168,6 +168,9 @@ function ModalChecklist({ data, criancaId, onClose }: {
                 <Secao titulo="📝 Observações livres">
                   <CampoSec label="Conquistas" val={detalhe.secoes.observacoes.conquistas} />
                   <CampoSec label="Dificuldades" val={detalhe.secoes.observacoes.dificuldades} />
+                  <CampoSec label="Diferente hoje" val={detalhe.secoes.observacoes.diferente_hoje} />
+                </Secao>
+              )}
             </>
           )}
         </div>
