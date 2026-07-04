@@ -428,9 +428,21 @@ function ChecklistNovoContent() {
               {/* Higiene */}
               <div>
                 <h4 className="text-sm font-semibold mb-2">Higiene</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectBoolean label="Escovou dentes?" checked={form.higiene.escovou_dentes} onChange={v => updateSection('higiene', 'escovou_dentes', v)} />
-                  <SelectBoolean label="Sinalizou banheiro?" checked={form.higiene.sinalizou_banheiro} onChange={v => updateSection('higiene', 'sinalizou_banheiro', v)} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <select className="input" value={form.higiene.banho || ''} onChange={e => updateSection('higiene', 'banho', e.target.value)}>
+                      <option value="">Como foi o banho?</option>
+                      <option value="tranquilo">Tranquilo</option>
+                      <option value="resistencia">Resistência</option>
+                      <option value="crise">Crise</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center">
+                    <SelectBoolean label="Escovou dentes?" checked={form.higiene.escovou_dentes} onChange={v => updateSection('higiene', 'escovou_dentes', v)} />
+                  </div>
+                  <div className="flex items-center">
+                    <SelectBoolean label="Sinalizou banheiro?" checked={form.higiene.sinalizou_banheiro} onChange={v => updateSection('higiene', 'sinalizou_banheiro', v)} />
+                  </div>
                 </div>
               </div>
               {/* Vestuario */}
@@ -439,6 +451,19 @@ function ChecklistNovoContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <SelectBoolean label="Colaborou ao vestir?" checked={form.vestuario.colaborou_roupa} onChange={v => updateSection('vestuario', 'colaborou_roupa', v)} />
                   <SelectBoolean label="Incômodo sensorial (etiqueta/tecido)?" checked={form.vestuario.incomodo_sensorial} onChange={v => updateSection('vestuario', 'incomodo_sensorial', v)} />
+                </div>
+              </div>
+              {/* Movimento */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Movimento</h4>
+                <div className="grid grid-cols-1 gap-4 mb-3">
+                  <div>
+                    <TagInput tags={form.movimento.atividades || []} onChange={v => updateSection('movimento', 'atividades', v)} placeholder="Atividades físicas (Ex: correu, pulou, balanço)..." />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <SelectBoolean label="Caiu muito?" checked={form.movimento.caiu_muito} onChange={v => updateSection('movimento', 'caiu_muito', v)} />
+                  <SelectBoolean label="Buscou muito colo?" checked={form.movimento.buscou_colo} onChange={v => updateSection('movimento', 'buscou_colo', v)} />
                 </div>
               </div>
               {/* Rotina */}
