@@ -435,6 +435,20 @@ CREATE TABLE checklist_observacoes (
   dificuldades TEXT,
   diferente_hoje TEXT
 );
+
+-- Terapias (Desacopladas)
+CREATE TABLE sessoes_terapia (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  crianca_id UUID REFERENCES criancas(id),
+  usuario_id UUID REFERENCES usuarios(id),
+  data DATE NOT NULL,
+  horario_inicio TIME,
+  horario_fim TIME,
+  especialidade TEXT NOT NULL,
+  notas_sessao TEXT,
+  criado_em TIMESTAMPTZ DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ DEFAULT NOW()
+);
 ```
 
 ---
