@@ -4,6 +4,7 @@ import os
 import logging
 from openai import OpenAI
 from core.database import get_connection
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -12,7 +13,7 @@ def buscar_contexto_documentos(pergunta: str, crianca_id: str, limite: int = 5) 
     """Busca os chunks de documentos mais relevantes para a pergunta (Busca Semântica RAG)."""
     try:
         # 1. Transforma a pergunta do usuário em um vetor
-        response = client.embeddings.create(input=pergunta, model="text-embedding-3-small")
+        response = client.embeddings.create(input=pergunta, model=settings.EMBEDDING_MODEL)
         embedding_pergunta = response.data[0].embedding
         emb_str = f"[{','.join(map(str, embedding_pergunta))}]"
         

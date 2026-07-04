@@ -13,6 +13,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from database import get_connection
 from profile import atualizar_perfil
 from clients import get_openai_client, OpenAI
+from core.config import settings
 from core.storage import upload_file_to_r2
 import uuid
 
@@ -47,7 +48,7 @@ def is_document_relevant(text: str, client: OpenAI) -> bool:
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo", # Modelo mais rápido e barato para classificação
+            model=settings.LLM_MODEL_PDF, # Modelo mais rápido e barato para classificação
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=5)
@@ -131,7 +132,7 @@ def processar_pdf(file_path: str, tipo: str, especialidade: str, titulo: str, da
     try:
         response = client.embeddings.create(
             input=chunks,
-            model="text-embedding-3-small"
+            model=settings.EMBEDDING_MODEL
         )
         embeddings = [data.embedding for data in response.data]
     except Exception as e:

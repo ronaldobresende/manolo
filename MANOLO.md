@@ -227,6 +227,8 @@ CREATE TABLE usuarios (
   nome TEXT NOT NULL,
   telefone_whatsapp TEXT UNIQUE NOT NULL,
   email TEXT,
+  email_web TEXT UNIQUE,
+  senha_hash TEXT,
   perfil TEXT CHECK (perfil IN ('admin', 'família', 'terapeuta')),
   ativo BOOLEAN DEFAULT TRUE,
   criado_em TIMESTAMPTZ DEFAULT NOW()
@@ -238,6 +240,7 @@ CREATE TABLE criancas (
   account_id UUID REFERENCES accounts(id),
   nome TEXT NOT NULL,
   data_nascimento DATE NOT NULL,
+  foto_url VARCHAR(500),
   diagnosticos JSONB DEFAULT '[]',
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
@@ -248,8 +251,17 @@ CREATE TABLE criancas_terapeutas (
   usuario_id UUID REFERENCES usuarios(id),
   especialidade TEXT NOT NULL,
   ativo BOOLEAN DEFAULT TRUE,
-  desde DATE DEFAULT CURRENT_DATE,
   PRIMARY KEY (crianca_id, usuario_id)
+);
+
+-- Marcos (conquistas da criança)
+CREATE TABLE marcos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  crianca_id UUID REFERENCES criancas(id),
+  usuario_id UUID REFERENCES usuarios(id),
+  descricao TEXT NOT NULL,
+  data_marco DATE NOT NULL,
+  criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
@@ -345,7 +357,8 @@ CREATE TABLE checklist_sono (
   dormiu_as TIME,
   acordou_as TIME,
   acordou_noite BOOLEAN,
-  cochilo BOOLEAN,
+  cochilo_inicio TIME,
+  cochilo_fim TIME,
   notas TEXT
 );
 
@@ -417,6 +430,8 @@ CREATE TABLE checklist_humor (
   humor_geral TEXT CHECK (humor_geral IN ('muito_bom', 'bom', 'regular', 'agitado', 'difícil')),
   teve_crise BOOLEAN,
   o_que_acalmou TEXT,
+  cobertor_disponivel BOOLEAN,
+  se_acalmou_sem_cobertor BOOLEAN,
   notas TEXT
 );
 
@@ -425,7 +440,8 @@ CREATE TABLE checklist_rotina (
   checklist_id UUID PRIMARY KEY REFERENCES checklists(id),
   guardou_brinquedos BOOLEAN,
   ajudou_tarefa BOOLEAN,
-  aceitou_transicao BOOLEAN
+  aceitou_transicao BOOLEAN,
+  teve_escola BOOLEAN
 );
 
 -- Observações livres

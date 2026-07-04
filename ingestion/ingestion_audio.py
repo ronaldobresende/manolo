@@ -12,6 +12,7 @@ from core.database import get_connection
 from agent.checklist import salvar_checklist
 from agent.profile import atualizar_perfil
 from core.clients import get_openai_client
+from core.config import settings
 from core.storage import upload_file_to_r2
 import uuid
 
@@ -64,7 +65,7 @@ def _determinar_intencao_audio(transcricao: str) -> str:
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.LLM_MODEL_ROUTING_AUDIO,
             messages=[
                 {"role": "system", "content": prompt_sistema},
                 {"role": "user", "content": transcricao}
@@ -95,7 +96,7 @@ O JSON deve ter duas chaves principais:
     client = get_openai_client()
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.LLM_MODEL_EXTRACTION_AUDIO,
             response_format={ "type": "json_object" },
             messages=[
                 {"role": "system", "content": prompt_sistema},
@@ -156,7 +157,7 @@ def _processar_arquivo_audio(file_path: str, data_checklist: str, crianca_id: st
     try:
         with open(file_path, "rb") as audio_file:
             transcript = client.audio.transcriptions.create(
-                model="whisper-1",
+                model=settings.AUDIO_TRANSCRIPTION_MODEL,
                 file=audio_file,
                 language="pt"
             )

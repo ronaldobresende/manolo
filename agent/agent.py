@@ -126,7 +126,7 @@ def classificar_intencao(state: ManoloState) -> dict:
     client = get_openai_client()
     try:
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=settings.LLM_MODEL_ROUTING,
             messages=[
                 {"role": "system", "content": """Você é um classificador de intenção para um assistente de desenvolvimento infantil.
 Analise a mensagem do usuário e classifique ESTRITAMENTE em uma destas opções:
@@ -192,7 +192,7 @@ REGRAS DE DUPLA EXTRAÇÃO (TERAPEUTAS):
 
     try:
         response = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
+            model=settings.LLM_MODEL_EXTRACTION,
             response_format=LLMChecklistResponse,
             messages=[
                 {"role": "system", "content": prompt_extracao},
@@ -281,7 +281,7 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.LLM_MODEL_RAG,
             messages=[
                 {"role": "system", "content": prompt_sistema},
                 {"role": "user", "content": prompt_usuario},
@@ -310,7 +310,7 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     # Usa o LLM para interpretar datas relativas ("ontem", "anteontem") ou absolutas
     try:
         resp_data = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=settings.LLM_MODEL_REPORT_DATE,
             messages=[
                 {"role": "system", "content": f"A data de hoje é {hoje}. O usuário está pedindo um relatório. Extraia a qual data ele se refere na mensagem. Responda APENAS com a data no formato YYYY-MM-DD. Se ele não mencionar nenhuma data, responda HOJE."},
                 {"role": "user", "content": mensagem}
@@ -344,7 +344,7 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.LLM_MODEL_REPORT_SUMMARY,
             messages=[
                 {"role": "system", "content": prompt_sistema},
                 {"role": "user", "content": prompt_usuario}

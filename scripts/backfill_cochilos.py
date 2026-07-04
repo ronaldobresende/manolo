@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from core.database import get_connection
 from core.clients import get_openai_client
+from core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ Relato:
                 
                 try:
                     response = client.beta.chat.completions.parse(
-                        model="gpt-4o-mini",
+                        model=settings.LLM_MODEL_SCRIPT_BACKFILL,
                         messages=[{"role": "user", "content": prompt}],
                         response_format=CochiloExtracao,
                         temperature=0

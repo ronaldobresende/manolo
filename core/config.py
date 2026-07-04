@@ -39,8 +39,19 @@ class Settings(BaseSettings):
     CRIANCA_ID_PILOTO: str = "c0000000-0000-0000-0000-000000000001"
     USUARIO_ID_PILOTO: str = "b0000000-0000-0000-0000-000000000001"
 
-    # Configurações do modelo de embedding
+    # Configurações de Modelos de IA
+    LLM_MODEL_ROUTING: str = "gpt-4o-mini"
+    LLM_MODEL_ROUTING_AUDIO: str = "gpt-4o"
+    LLM_MODEL_EXTRACTION: str = "gpt-4o-mini"
+    LLM_MODEL_EXTRACTION_AUDIO: str = "gpt-4o"
+    LLM_MODEL_RAG: str = "gpt-4o"
+    LLM_MODEL_REPORT_DATE: str = "gpt-4o-mini"
+    LLM_MODEL_REPORT_SUMMARY: str = "gpt-4o"
+    LLM_MODEL_PROFILE: str = "gpt-4o"
+    LLM_MODEL_PDF: str = "gpt-3.5-turbo"
+    AUDIO_TRANSCRIPTION_MODEL: str = "whisper-1"
     EMBEDDING_MODEL: str = "text-embedding-3-small"
+    LLM_MODEL_SCRIPT_BACKFILL: str = "gpt-4o-mini"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore')
 

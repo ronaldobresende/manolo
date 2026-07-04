@@ -86,7 +86,7 @@ Por favor, gere o novo perfil atualizado.
 
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.LLM_MODEL_PROFILE,
             response_format={ "type": "json_object" },
             messages=[
                 {"role": "system", "content": prompt_sistema},

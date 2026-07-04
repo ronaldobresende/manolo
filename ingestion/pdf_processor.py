@@ -12,6 +12,7 @@ from core.database import get_connection
 from agent.profile import atualizar_perfil
 from core.clients import get_openai_client
 from openai import OpenAI
+from core.config import settings
 
 # Configuração básica de log
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -37,7 +38,7 @@ def is_document_relevant(text: str, client: OpenAI) -> bool:
     """
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo", # Modelo mais rápido e barato para classificação
+            model=settings.LLM_MODEL_PDF, # Modelo mais rápido e barato para classificação
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
             max_tokens=5)

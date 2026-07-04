@@ -12,6 +12,7 @@ from database import get_connection
 from checklist import salvar_checklist
 from profile import atualizar_perfil
 from clients import get_openai_client
+from core.config import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ O JSON deve ter duas chaves principais:
     
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",
+            model=settings.LLM_MODEL_EXTRACTION_AUDIO,
             response_format={ "type": "json_object" },
             messages=[
                 {"role": "system", "content": prompt_sistema},
