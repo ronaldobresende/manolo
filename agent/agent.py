@@ -119,8 +119,10 @@ Especialidade (se terapeuta): {especialidade}
 @traceable(name="classificar_intencao")
 def classificar_intencao(state: ManoloState) -> dict:
     """
-    NÓ 1 — Determina a intenção da mensagem (Porta de entrada do Grafo).
+    NÓ 1 — Determina se o usuário quer conversar (RAG) ou informar um evento diário (Checklist).
     """
+    logger.info(f"[ROUTING] Iniciando classificação usando modelo: {settings.LLM_MODEL_ROUTING}")
+    
     mensagem = state["mensagem"]
 
     client = get_openai_client()
@@ -257,6 +259,8 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
     """
     NÓ 3 — Fluxo de pergunta livre: busca contexto RAG, monta prompt e chama LLM.
     """
+    logger.info(f"[RAG] Iniciando resposta usando modelo: {settings.LLM_MODEL_RAG}")
+    
     mensagem = state["mensagem"]
     crianca_id = state["crianca_id"]
     nome_usuario = state["nome_usuario"]
@@ -273,7 +277,7 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
 
     prompt_sistema = construir_prompt_sistema(crianca_id, perfil_usuario, nome_usuario)
     
-    # Suporte A/B Testing: Adapta o prompt e os parâmetros dependendo da família do modelo
+    # Suporte A/B Testing
     if "gpt-4" in settings.LLM_MODEL_RAG:
         regras_ancoragem = (
             f"REGRA ANTI-ALUCINAÇÃO: Se os registros diários acima estiverem vazios ou não contiverem"

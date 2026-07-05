@@ -1,168 +1,199 @@
 # Plano de Refatoração da Plataforma de IA do Manolo
 
-> Objetivo: transformar o Manolo em uma plataforma AI-Native desacoplada dos modelos e provedores de IA, preparada para evolução contínua, redução de custos, observabilidade e suporte a múltiplos agentes.
+> **Objetivo:** transformar o Manolo em uma plataforma AI-Native desacoplada de modelos, prompts e provedores de IA, permitindo evoluir continuamente entre OpenAI, Gemini, Claude e futuros modelos apenas por configuração, preservando a lógica de negócio e reduzindo o custo de manutenção.
 
 ---
 
-# Objetivos
+# Princípios da Arquitetura
 
-Ao final da refatoração, o sistema deverá permitir:
+A arquitetura deverá seguir os seguintes princípios:
 
-- trocar modelos sem alterar código de negócio;
-- trocar provedores (OpenAI, Gemini, Claude...) apenas por configuração;
-- suportar diferentes capacidades de cada modelo;
-- reduzir custos de tokens;
-- facilitar benchmark entre modelos;
-- facilitar testes;
-- preparar o sistema para workflows multiagente.
+- A lógica de negócio nunca conhece o modelo utilizado.
+- A lógica de negócio nunca conhece o provedor de IA.
+- Prompts são tratados como artefatos versionáveis.
+- Cada família de modelos pode possuir prompts próprios.
+- A troca de modelo deve ocorrer apenas por configuração.
+- A plataforma deve adaptar automaticamente diferenças entre modelos (temperature, reasoning, etc.).
+- O LangGraph deve conhecer apenas tarefas de negócio.
 
 ---
 
 # Arquitetura Alvo
 
-```
+```text
                  LangGraph
                      │
                      ▼
-              AI Service Layer
+                AI Service
                      │
          ┌───────────┼────────────┐
          ▼           ▼            ▼
-  Prompt Layer   Model Registry  Provider Layer
+ Prompt Builder   AI Profiles   Provider Layer
                      │
-          Capability Adapter
+             Capability Adapter
                      │
       ┌──────────────┼──────────────┐
       ▼              ▼              ▼
    OpenAI        Gemini        Claude
 ```
 
-Nenhum nó do LangGraph deve conhecer OpenAI, Gemini ou Claude.
-
 ---
 
 # Fase 1 — AI Service
 
-Criar uma camada única responsável por toda comunicação com IA.
+## Objetivo
 
-Exemplo:
+Criar uma camada única responsável por toda comunicação com modelos de IA.
 
-```
-AIService
+Nenhum nó do LangGraph poderá chamar diretamente:
 
-chat()
+- OpenAI
+- Gemini
+- Claude
 
-structured_output()
+Toda comunicação deverá passar pelo AIService.
 
-classify()
+Exemplo de responsabilidades:
 
-summarize()
-
-embeddings()
-
-transcribe()
-```
-
-O restante da aplicação nunca chama diretamente a SDK do provedor.
-
-Exemplo
-
-Antes
-
-```
-LangGraph
-
-↓
-
-OpenAI
-```
-
-Depois
-
-```
-LangGraph
-
-↓
-
-AIService
-
-↓
-
-Provider
-```
+- geração de texto;
+- structured outputs;
+- classificação;
+- embeddings;
+- transcrição;
+- retries;
+- logging;
+- métricas;
+- streaming.
 
 ---
 
-# Fase 2 — Model Registry
+# Fase 2 — AI Profiles
 
-Toda tarefa possuirá uma configuração centralizada.
+## Objetivo
+
+Substituir a configuração direta de modelos por perfis de IA.
+
+Ao invés de uma tarefa conhecer um modelo específico, ela conhecerá apenas um perfil.
 
 Exemplo conceitual
 
 ```
 Routing
 
-Extraction
+↓
 
-RAG
-
-Summary
-
-Profile
-
-OCR
-
-Backfill
+routing-gpt5
 ```
 
-Cada configuração define:
+Cada perfil define:
 
 - provider
 - modelo
-- reasoning desejado
-- temperatura desejada
+- prompt
+- reasoning
+- temperature
 - timeout
 - retries
 - structured output
-- streaming
 - cache
-
-Assim, trocar GPT-5 por GPT-4o passa a ser apenas alteração de configuração.
-
----
-
-# Fase 3 — Capability Adapter (IMPORTANTE)
-
-Modelos diferentes possuem capacidades diferentes.
+- streaming
 
 Exemplo
 
-GPT-5
+```
+routing-gpt5
 
-- suporta reasoning
-- não suporta temperature
+↓
 
-GPT-4o
+OpenAI
 
-- suporta temperature
-- não suporta reasoning
+↓
+
+GPT-5 Nano
+
+↓
+
+Prompt GPT-5
+
+↓
+
+Reasoning Low
+```
+
+Outro perfil
+
+```
+routing-gpt4
+
+↓
+
+OpenAI
+
+↓
+
+GPT-4o Mini
+
+↓
+
+Prompt GPT-4
+
+↓
+
+Temperature 0
+```
+
+Outro perfil
+
+```
+routing-gemini
+
+↓
 
 Gemini
 
-- possui parâmetros próprios
+↓
+
+Prompt Gemini
+```
+
+A troca entre modelos passa a ser apenas alteração de configuração.
+
+Nenhuma linha da lógica de negócio precisa ser modificada.
+
+---
+
+# Fase 3 — Capability Adapter
+
+## Objetivo
+
+Cada modelo possui capacidades diferentes.
+
+Exemplos
+
+GPT-5
+
+- reasoning
+- sem temperature
+
+GPT-4o
+
+- temperature
+- sem reasoning
+
+Gemini
+
+- safety settings
 
 Claude
 
-- possui parâmetros próprios
+- thinking
 
-O sistema nunca deve assumir que todos possuem os mesmos parâmetros.
+O Capability Adapter adapta automaticamente a configuração do AI Profile para o provedor escolhido.
 
-Criar uma camada responsável por adaptar automaticamente a configuração.
-
-Exemplo conceitual
+Fluxo
 
 ```
-Task Configuration
+AI Profile
 
 ↓
 
@@ -170,12 +201,12 @@ Capability Adapter
 
 ↓
 
-Requisição compatível com o modelo escolhido
+Requisição compatível
 ```
 
 Exemplo
 
-Configuração da tarefa
+Configuração
 
 ```
 temperature = 0
@@ -183,29 +214,27 @@ temperature = 0
 reasoning = high
 ```
 
-Se o modelo for GPT-5
+GPT-5
 
 ↓
 
-envia apenas
+envia
 
 ```
 reasoning = high
 ```
 
-Se o modelo for GPT-4o
+GPT-4o
 
 ↓
 
-envia apenas
+envia
 
 ```
 temperature = 0
 ```
 
-Se amanhã surgir GPT-6 ou Gemini 4, basta atualizar o adapter.
-
-Essa camada elimina completamente erros de incompatibilidade de parâmetros.
+O restante do sistema permanece totalmente transparente a essas diferenças.
 
 ---
 
@@ -213,7 +242,9 @@ Essa camada elimina completamente erros de incompatibilidade de parâmetros.
 
 Criar adapters para cada provedor.
 
-Interface comum
+Todos deverão implementar a mesma interface.
+
+Exemplo conceitual
 
 ```
 generate()
@@ -235,104 +266,163 @@ GeminiProvider
 ClaudeProvider
 ```
 
-A lógica de negócio nunca conhece o provedor.
+O restante da plataforma nunca conhecerá a SDK utilizada.
 
 ---
 
 # Fase 5 — Prompt Layer
 
-Todos os prompts devem sair do código.
+Todos os prompts deverão sair do código.
 
 Estrutura sugerida
 
 ```
+ai/
+
 prompts/
 
-routing.md
+gpt4/
 
-checklist.md
+gpt5/
+
+gemini/
+
+claude/
+```
+
+Cada família de modelos poderá possuir prompts próprios.
+
+Exemplo
+
+```
+gpt5/
+
+routing.md
 
 rag.md
 
 summary.md
 
 profile.md
-
-ocr.md
 ```
 
-Benefícios
+```
+gpt4/
 
-- versionamento
-- revisão
-- Prompt Engineering
-- testes A/B
-- reutilização
+routing.md
 
----
+rag.md
 
-# Fase 6 — Responses API
+summary.md
+```
 
-Migrar gradualmente da Chat Completions API para Responses API onde fizer sentido.
-
-Prioridade
-
-- GPT-5
-- Structured Outputs
-- Reasoning
-- Ferramentas futuras
-
-Manter uma camada de abstração para permitir fallback caso seja necessário utilizar Chat Completions.
+Isso permite otimizar prompts individualmente para cada família de modelos.
 
 ---
 
-# Fase 7 — Prompt Builder
+# Fase 6 — Prompt Builder
 
-Hoje praticamente todos os prompts utilizam o mesmo contexto.
+O Prompt Builder será responsável por montar automaticamente o prompt final.
 
-Criar um Prompt Builder.
+Hoje vários prompts são montados manualmente.
+
+O Prompt Builder combinará:
+
+- prompt base;
+- guardrails;
+- contexto;
+- Perfil Vivo;
+- persona;
+- especialidade.
+
+Fluxo
+
+```
+Base
+
++
+
+Guardrails
+
++
+
+Contexto
+
++
+
+Perfil
+
++
+
+Persona
+
+↓
+
+Prompt Final
+```
+
+Nenhum nó do LangGraph deverá concatenar prompts manualmente.
+
+---
+
+# Fase 7 — Versionamento de Prompts
+
+Os prompts passam a ser tratados como código.
+
+O versionamento principal será realizado pelo Git.
+
+Cada AI Profile referencia explicitamente o prompt adequado para aquela família de modelos.
 
 Exemplo
 
 ```
-PromptBuilder
+routing-gpt5
 
 ↓
 
-Prompt pequeno
+prompts/gpt5/routing.md
+```
+
+```
+routing-gpt4
 
 ↓
 
-Routing
-
-OCR
-
-Data Parsing
+prompts/gpt4/routing.md
 ```
 
-ou
+Caso seja necessário retornar do GPT-5 para GPT-4, basta alterar o AI Profile.
 
-```
-Prompt completo
+O sistema utilizará automaticamente:
 
-↓
-
-RAG
-
-Perfil Vivo
-```
-
-Evitar enviar Perfil Vivo quando não for necessário.
-
-Reduz custo significativamente.
+- o modelo correto;
+- o prompt correto;
+- a configuração correta.
 
 ---
 
-# Fase 8 — Router Híbrido
+# Fase 8 — Responses API
 
-Nem toda mensagem precisa de LLM.
+Migrar gradualmente da Chat Completions API para Responses API.
+
+Benefícios
+
+- GPT-5
+- reasoning
+- structured outputs
+- ferramentas futuras
+
+A camada de Provider deverá esconder essa diferença.
+
+---
+
+# Fase 9 — Router Híbrido
+
+Nem toda mensagem precisa consumir tokens.
 
 Criar uma etapa determinística.
+
+Fluxo
 
 ```
 Mensagem
@@ -351,21 +441,17 @@ Exemplos
 - oi
 - bom dia
 - obrigado
-- ok
 - 👍
 
-Não precisam consumir tokens.
+podem ser respondidos sem utilização de IA.
 
 ---
 
-# Fase 9 — Retriever Inteligente
+# Fase 10 — Retriever Inteligente
 
-Hoje o RAG sempre busca:
+Hoje o RAG busca sempre os mesmos conjuntos de dados.
 
-- documentos
-- checklists
-
-Criar um Retriever que escolha apenas o contexto necessário.
+Criar um Retriever responsável por decidir qual contexto enviar.
 
 Fluxo
 
@@ -385,13 +471,36 @@ Contexto relevante
 LLM
 ```
 
+Reduz tokens e melhora qualidade.
+
 ---
 
-# Fase 10 — Atualização do Perfil Vivo
+# Fase 11 — Prompt Cache
 
-Hoje ocorre logo após salvar um checklist.
+Alguns componentes do prompt mudam muito pouco.
+
+Exemplos
+
+- Perfil Vivo
+- Prompt Base
+- Especialidade
+- Perfil do Usuário
+
+Esses componentes poderão ser mantidos em cache para reduzir:
+
+- tempo de resposta;
+- custo;
+- reconstrução de prompts.
+
+---
+
+# Fase 12 — Atualização do Perfil Vivo
+
+Hoje o Perfil Vivo é atualizado logo após o fluxo principal.
 
 Migrar para arquitetura orientada a eventos.
+
+Fluxo
 
 ```
 Checklist salvo
@@ -410,86 +519,44 @@ Worker
 
 ↓
 
-Perfil Vivo
+Atualizar Perfil Vivo
 ```
 
-A resposta ao WhatsApp não deve depender dessa atualização.
+A resposta ao WhatsApp não deverá depender desse processamento.
 
 ---
 
-# Fase 11 — Observabilidade
+# Fase 13 — Observabilidade
 
-Centralizar métricas.
+Centralizar métricas da IA.
 
 Registrar
 
-- modelo
-- provider
-- latência
-- tokens
-- custo
-- retries
-- falhas
-- cache hit
-- reasoning utilizado
+- provider;
+- modelo;
+- AI Profile utilizado;
+- prompt utilizado;
+- latência;
+- tokens;
+- custo;
+- retries;
+- falhas;
+- cache hit;
+- reasoning utilizado.
 
 Permitir dashboards por tarefa.
 
 ---
 
-# Fase 12 — Prompt Versioning
-
-Versionar prompts.
-
-Exemplo
-
-```
-routing_v1
-
-routing_v2
-
-routing_v3
-```
-
-Permite rollback sem alterar código.
-
----
-
-# Fase 13 — Testes
-
-Criar suíte de testes para IA.
-
-Routing
-
-- classificação correta
-
-Extraction
-
-- JSON válido
-
-RAG
-
-- grounding
-- guardrails
-- datas relativas
-
-Summary
-
-- tom adequado
-
-Profile
-
-- evolução longitudinal
-
----
-
 # Fase 14 — Benchmark
 
-Criar ferramenta para comparar modelos.
+Criar ferramenta para comparação de modelos.
 
-Exemplo
+Mesmo prompt
 
-Mesma entrada
+↓
+
+Mesmo contexto
 
 ↓
 
@@ -509,16 +576,49 @@ Claude
 
 Comparar
 
-- qualidade
-- custo
-- latência
-- tokens
+- qualidade;
+- latência;
+- custo;
+- tokens.
+
+Isso permitirá trocar modelos com base em evidências.
 
 ---
 
-# Fase 15 — Multiagentes
+# Fase 15 — Testes
 
-Preparar arquitetura para agentes especializados.
+Criar suíte de testes para IA.
+
+Routing
+
+- classificação correta.
+
+Extraction
+
+- JSON válido.
+
+RAG
+
+- grounding;
+- datas relativas;
+- guardrails.
+
+Summary
+
+- tom adequado.
+
+Perfil Vivo
+
+- evolução longitudinal;
+- consolidação de informações.
+
+---
+
+# Fase 16 — Preparação para Multiagentes
+
+A arquitetura deverá permitir evolução para múltiplos agentes especializados.
+
+Exemplo
 
 ```
 Supervisor
@@ -535,16 +635,19 @@ Supervisor
 
 ├── Profile Agent
 
-└── OCR Agent
+├── OCR Agent
+
+└── Analytics Agent
 ```
 
-Todos utilizam
+Todos compartilharão:
 
-- AIService
-- Prompt Layer
-- Model Registry
-- Capability Adapter
-- Provider Layer
+- AI Service;
+- AI Profiles;
+- Prompt Builder;
+- Provider Layer;
+- Capability Adapter;
+- Observabilidade.
 
 ---
 
@@ -552,10 +655,10 @@ Todos utilizam
 
 ## Sprint 1
 
-- AIService
-- Model Registry
+- AI Service
+- AI Profiles
 - Capability Adapter
-- GPT-5
+- Migração para GPT-5
 - Responses API
 
 ---
@@ -564,26 +667,26 @@ Todos utilizam
 
 - Provider Layer
 - Prompt Layer
+- Prompt Builder
 - Observabilidade
-- Retry Policy
 
 ---
 
 ## Sprint 3
 
-- Prompt Builder
 - Router híbrido
-- Retriever inteligente
-- Cache
+- Retriever Inteligente
+- Prompt Cache
+- Benchmark
 
 ---
 
 ## Sprint 4
 
 - Eventos para Perfil Vivo
-- Benchmark
-- Prompt Versioning
+- Testes automatizados
 - Métricas de custo
+- Dashboards
 
 ---
 
@@ -597,4 +700,17 @@ Todos utilizam
 
 # Benefícios Esperados
 
-Ao final da refatoração, o Manolo terá uma arquitetura desacoplada e preparada para evolução contínua. A troca de modelos (GPT-5, GPT-4o, Gemini, Claude ou futuros) deixará de exigir alterações na lógica de negócio, passando a ser apenas uma mudança de configuração. O sistema será resiliente às diferenças de capacidades entre modelos (como `temperature`, `reasoning` e outros parâmetros), permitindo benchmark contínuo, redução de custos, maior observabilidade e uma base sólida para a evolução para workflows multiagente.
+Ao final da refatoração, o Manolo possuirá uma arquitetura verdadeiramente AI-Native, desacoplada da tecnologia de IA utilizada.
+
+A mudança entre GPT-5, GPT-4o, Gemini, Claude ou futuros modelos será realizada apenas pela troca de um **AI Profile**, que encapsula modelo, provedor, prompt e parâmetros específicos da família de modelos. A lógica de negócio permanecerá inalterada.
+
+Essa arquitetura permitirá:
+
+- migração segura entre modelos;
+- rollback imediato para modelos anteriores;
+- prompts específicos para cada família de modelos;
+- adaptação automática às capacidades de cada provedor;
+- redução do acoplamento;
+- maior observabilidade;
+- benchmarking contínuo;
+- preparação para uma plataforma multiagente escalável.
