@@ -272,13 +272,28 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
         return {"resposta": "Tive um problema ao buscar o histórico. Tente novamente.\n— Manolo"}
 
     prompt_sistema = construir_prompt_sistema(crianca_id, perfil_usuario, nome_usuario)
+    
+    # Suporte A/B Testing: Adapta o prompt e os parâmetros dependendo da família do modelo
+    if "gpt-4" in settings.LLM_MODEL_RAG:
+        regras_ancoragem = (
+            f"REGRA ANTI-ALUCINAÇÃO: Se os registros diários acima estiverem vazios ou não contiverem"
+            f" informações sobre o período específico perguntado, informe que não há registros para"
+            f" esse período. NÃO use as preferências gerais do Perfil Vivo como substituto de eventos"
+            f" reais. NÃO invente ou assuma que algo aconteceu.\n\n"
+        )
+        kwargs = {"temperature": 0.2}
+    else:
+        # Prompt otimizado para reasoning (família GPT-5, o1, o3)
+        regras_ancoragem = (
+            f"Use estritamente os registros diários acima para responder. Caso não haja dados no "
+            f"contexto para o período solicitado, informe educadamente que não há registros.\n\n"
+        )
+        kwargs = {}
+
     prompt_usuario = (
         f"Contexto de documentos e laudos históricos:\n{contexto_docs}\n\n"
         f"Últimos registros diários (Checklists):\n{contexto_checklists}\n\n"
-        f"REGRA ANTI-ALUCINAÇÃO: Se os registros diários acima estiverem vazios ou não contiverem"
-        f" informações sobre o período específico perguntado, informe que não há registros para"
-        f" esse período. NÃO use as preferências gerais do Perfil Vivo como substituto de eventos"
-        f" reais. NÃO invente ou assuma que algo aconteceu.\n\n"
+        f"{regras_ancoragem}"
         f"Pergunta do usuário: {mensagem}"
     )
 
@@ -289,7 +304,7 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
                 {"role": "system", "content": prompt_sistema},
                 {"role": "user", "content": prompt_usuario},
             ],
-            temperature=0.2,
+            **kwargs
         )
         return {"resposta": response.choices[0].message.content}
     except Exception as e:
