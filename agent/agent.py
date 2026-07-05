@@ -259,7 +259,7 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
     """
     NÓ 3 — Fluxo de pergunta livre: busca contexto RAG, monta prompt e chama LLM.
     """
-    logger.info(f"[RAG] Iniciando resposta usando modelo: {settings.LLM_MODEL_RAG}")
+    logger.info(f"[RAG] Iniciando resposta usando o modelo: {settings.LLM_MODEL_RAG}")
     
     mensagem = state["mensagem"]
     crianca_id = state["crianca_id"]
