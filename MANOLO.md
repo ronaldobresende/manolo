@@ -32,7 +32,7 @@ A primeira criança do sistema é **Bernardo**, filho do administrador. O sistem
 | Backend | Python + FastAPI | Ecossistema LLM mais maduro em Python |
 | Banco relacional | PostgreSQL + pgvector | Relacional + busca vetorial no mesmo banco |
 | Object storage | Cloudflare R2 | Custo baixo, PDFs, vídeos, áudios e imagens |
-| LLM Principal | OpenAI (gpt-4o / gpt-4o-mini) | Melhor qualidade de estruturação de dados (Structured Outputs) e Visão |
+| LLM Principal | OpenAI (gpt-4o / gpt-5 family) | Melhor qualidade de estruturação de dados (Structured Outputs) e Visão. Agora com suporte a A/B testing via config de 12 modelos independentes. |
 | Transcrição de áudio | Whisper API (OpenAI) | Mais rápida e consome menos recursos locais |
 | Hospedagem | Render ou Railway | Simples, barato, CI/CD via GitHub |
 | Multi-tenant | Por account_id em todas as tabelas | Isolamento completo entre famílias/clínicas |
@@ -136,7 +136,20 @@ volumes:
 ```
 DATABASE_URL=postgresql://manolo:manolo@localhost:5432/manolo
 OPENAI_API_KEY=          # LLM do agente + embeddings
-                         # quando migrar para Claude: adicionar ANTHROPIC_API_KEY e trocar model string
+
+# Mapeamento dinâmico de Modelos (A/B testing e Roteamento Específico)
+LLM_MODEL_INTENT=gpt-5-nano
+LLM_MODEL_AUDIO_INTENT=gpt-5-nano
+LLM_MODEL_EXTRACTION=gpt-5-mini
+LLM_MODEL_AUDIO_EXTRACTION=gpt-5-mini
+LLM_MODEL_RAG=gpt-5
+LLM_MODEL_DATE_INFERENCE=gpt-5-nano
+LLM_MODEL_REPORT_SUMMARY=gpt-5
+LLM_MODEL_PROFILE=gpt-5
+LLM_MODEL_VISION=gpt-4o
+LLM_MODEL_OCR=gpt-5-nano
+LLM_MODEL_BACKFILL=gpt-5-nano
+
 STORAGE_BUCKET=
 WHATSAPP_TOKEN=          # fase 3
 WHATSAPP_VERIFY_TOKEN=   # fase 3

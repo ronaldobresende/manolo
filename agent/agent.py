@@ -125,6 +125,9 @@ def classificar_intencao(state: ManoloState) -> dict:
 
     client = get_openai_client()
     try:
+        # Evita erro 400 em modelos de raciocínio (gpt-5, o1, o3) que não suportam temperature
+        kwargs = {"temperature": 0} if "gpt-4" in settings.LLM_MODEL_ROUTING else {}
+
         response = client.chat.completions.create(
             model=settings.LLM_MODEL_ROUTING,
             messages=[
@@ -138,7 +141,7 @@ Analise a mensagem do usuário e classifique ESTRITAMENTE em uma destas opções
 Responda APENAS com a palavra da classificação."""},
                 {"role": "user", "content": mensagem},
             ],
-            temperature=0,
+            **kwargs
         )
         intencao = response.choices[0].message.content.strip().lower()
         if intencao not in ("pergunta", "checklist", "relatorio_checklist", "outro"):
