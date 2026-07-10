@@ -360,7 +360,7 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     prompt_sistema = construir_prompt_sistema(crianca_id, perfil_usuario, nome_usuario)
     
     if perfil_usuario == "terapeuta":
-        prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva um resumo técnico e objetivo focado na evolução clínica, comportamentos e terapias realizadas.\n\n{resumo_formatado}"
+        prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva um resumo técnico e objetivo focado na evolução clínica, comportamentos e terapias realizadas.\nATENÇÃO: Você está escrevendo para o terapeuta da criança. Refira-se à família na terceira pessoa ('os pais', 'a mãe', 'a família') e NUNCA use 'vocês' ou 'seu filho'.\n\n{resumo_formatado}"
     else:
         prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva até dois parágrafos bem calorosos e empáticos para a família resumindo como foi o dia da criança.\n\n{resumo_formatado}"
     
