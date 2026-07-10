@@ -230,9 +230,8 @@ REGRAS DE DUPLA EXTRAÇÃO (TERAPEUTAS):
                 logger.info("[EXTRAÇÃO SILENCIOSA] Data/Contexto ambíguo detectado.")
                 resposta = "Anotado! Só me confirma uma coisa: em qual dia exatamente isso aconteceu? Assim eu guardo na caixinha certa. 🥰"
             else:
-                # Salva no banco (Extração Silenciosa)
                 for relato in resultado.relatos:
-                    data_ref = relato.data_referencia_iso or nova_data_contexto
+                    data_ref = relato.data_referencia_iso or data_hoje
                     nova_data_contexto = data_ref
                     
                     analise_json = relato.model_dump_json()
