@@ -375,17 +375,18 @@ def gerar_relatorio_checklist_node(state: ManoloState) -> dict:
     if perfil_usuario == "terapeuta":
         prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva um resumo técnico e objetivo focado na evolução clínica, comportamentos e terapias realizadas.\nATENÇÃO: Você está escrevendo para o terapeuta da criança. Refira-se à família na terceira pessoa ('os pais', 'a mãe', 'a família') e NUNCA use 'vocês' ou 'seu filho'.\n\n{resumo_formatado}"
     else:
-        prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva até dois parágrafos bem calorosos e empáticos para a família resumindo como foi o dia da criança.\n\n{resumo_formatado}"
+        prompt_usuario = f"Com base APENAS neste checklist estruturado, escreva um resumo curto e direto relatando objetivamente como foi o dia da criança, sem floreios emocionais.\n\n{resumo_formatado}"
     
     
     try:
+        kwargs = {"temperature": 0.5} if "gpt-4" in settings.LLM_MODEL_REPORT_SUMMARY else {}
         response = client.chat.completions.create(
             model=settings.LLM_MODEL_REPORT_SUMMARY,
             messages=[
                 {"role": "system", "content": prompt_sistema},
                 {"role": "user", "content": prompt_usuario}
             ],
-            temperature=0.5
+            **kwargs
         )
         historinha = response.choices[0].message.content.strip()
         resposta_final = f"{historinha}\n\n---\n\n{resumo_formatado}"
