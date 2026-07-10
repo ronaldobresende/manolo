@@ -196,6 +196,7 @@ REGRAS DE DUPLA EXTRAÇÃO (TERAPEUTAS):
 - O terapeuta NÃO precisa relatar comportamentos domésticos. Deixe como null apenas o que não for dito, mas extraia rigorosamente tudo o que for relatado!"""
 
     try:
+        kwargs = {"temperature": 0} if "gpt-4" in settings.LLM_MODEL_EXTRACTION else {}
         response = client.beta.chat.completions.parse(
             model=settings.LLM_MODEL_EXTRACTION,
             response_format=LLMChecklistResponse,
@@ -203,7 +204,7 @@ REGRAS DE DUPLA EXTRAÇÃO (TERAPEUTAS):
                 {"role": "system", "content": prompt_extracao},
                 {"role": "user", "content": mensagem},
             ],
-            temperature=0,
+            **kwargs
         )
         resultado = response.choices[0].message.parsed
         
