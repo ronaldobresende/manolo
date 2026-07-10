@@ -56,6 +56,7 @@ class ManoloState(TypedDict):
 
     # Saída
     resposta: str
+    historico_mensagens: list[dict]
 
 
 # ============================================================
@@ -235,6 +236,7 @@ REGRAS DE DUPLA EXTRAÇÃO (TERAPEUTAS):
                     nova_data_contexto = data_ref
                     
                     analise_json = relato.model_dump_json()
+                    logger.info(f"[EXTRAÇÃO SILENCIOSA] JSON a ser persistido ({data_ref}): {analise_json}")
                     salvar_checklist(crianca_id, usuario_id, data_ref, "whatsapp_texto", analise_json)
 
                 resposta = "Anotado! ✅"
@@ -301,16 +303,28 @@ def responder_pergunta_rag(state: ManoloState) -> dict:
         f"Pergunta do usuário: {mensagem}"
     )
 
+    historico = state.get("historico_mensagens", [])
+    messages = [{"role": "system", "content": prompt_sistema}]
+    
+    # Injeta o histórico anterior (ignorando a última que é a mensagem atual injetada via prompt_usuario)
+    for msg in historico[:-1]:
+        messages.append(msg)
+        
+    messages.append({"role": "user", "content": prompt_usuario})
+
     try:
         response = client.chat.completions.create(
             model=settings.LLM_MODEL_RAG,
-            messages=[
-                {"role": "system", "content": prompt_sistema},
-                {"role": "user", "content": prompt_usuario},
-            ],
+            messages=messages,
             **kwargs
         )
-        return {"resposta": response.choices[0].message.content}
+        resposta_final = response.choices[0].message.content
+        
+        # Adiciona a resposta do bot ao histórico e mantém os últimos 4 turnos
+        novo_historico = historico.copy()
+        novo_historico.append({"role": "assistant", "content": resposta_final})
+        
+        return {"resposta": resposta_final, "historico_mensagens": novo_historico[-5:]}
     except Exception as e:
         logger.error(f"[RAG] Erro na chamada LLM: {e}")
         return {"resposta": "Não consegui processar sua mensagem agora. Tente novamente.\n— Manolo"}
@@ -446,16 +460,23 @@ def executar_grafo(
     """
     config = {"configurable": {"thread_id": telefone}}
 
-    # Recuperar data_contexto do estado anterior (se houver)
+    # Recuperar dados do estado anterior
     data_contexto_anterior = _obter_data_hoje()
+    historico = []
     
     try:
         estado_anterior = manolo_graph.get_state(config)
         if estado_anterior and estado_anterior.values:
             if estado_anterior.values.get("data_contexto"):
                 data_contexto_anterior = estado_anterior.values.get("data_contexto")
+            if estado_anterior.values.get("historico_mensagens"):
+                historico = estado_anterior.values.get("historico_mensagens")
     except Exception:
         pass  # Sem estado anterior, segue normalmente
+        
+    # Gerencia a janela de contexto (máx 5 mensagens: 2 turnos completos + msg atual)
+    historico.append({"role": "user", "content": mensagem})
+    historico = historico[-5:]
 
     resultado = manolo_graph.invoke(
         {
@@ -469,6 +490,7 @@ def executar_grafo(
             "dados_extraidos": None,
             "data_contexto": data_contexto_anterior,
             "resposta": "",
+            "historico_mensagens": historico,
         },
         config,
     )
