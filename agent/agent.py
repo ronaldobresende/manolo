@@ -136,8 +136,8 @@ def classificar_intencao(state: ManoloState) -> dict:
             messages=[
                 {"role": "system", "content": """Você é um classificador de intenção para um assistente de desenvolvimento infantil.
 Analise a mensagem do usuário e classifique ESTRITAMENTE em uma destas opções:
-- 'relatorio_checklist': se o usuário estiver pedindo um resumo, relatório, ou perguntando "o que eu já anotei hoje?", "resumo do dia".
-- 'pergunta': se o usuário está fazendo uma pergunta geral, pedindo conselho, ou consultando o histórico ("o que ele costuma comer?", "o que fazer se ele chorar?").
+- 'relatorio_checklist': se o usuário pedir um resumo, relatório, ou checklist de UM ÚNICO DIA (ex: "o que eu já anotei hoje?", "resumo de ontem", "me dê o checklist de terça").
+- 'pergunta': se o usuário pedir resumos/análises de MÚLTIPLOS DIAS (ex: "resumo da semana", "como foi o sono nos últimos dias"), ou se estiver fazendo uma pergunta geral/consultando histórico ("o que ele costuma comer?", "o que fazer se ele chorar?").
 - 'checklist': se o usuário está relatando eventos do dia da criança de forma detalhada ou espontânea ("hoje ele comeu bem", "dormiu mal").
 - 'outro': saudação simples, conversa fiada sem dados.
 
